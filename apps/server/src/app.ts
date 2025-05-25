@@ -4,6 +4,7 @@ import { createLogger, createMorganMiddleware } from "@workspace/utils/logger";
 
 import { appRoutes } from "@/routes";
 import config from "@/utils/config";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import { errorHandler } from "@/middleware/error-handler";
@@ -39,6 +40,7 @@ app.use(
     credentials: true,
   }),
 );
+app.use(cookieParser());
 app.use(express.json());
 app.use(morganMiddleware);
 
@@ -49,7 +51,7 @@ app.use("/api", appRoutes);
 app.use(notFoundHandler);
 
 // Global error handler
-app.use(errorHandler({ logger }));
+app.use(errorHandler());
 
 // Start server
 app.listen(port, () => {
