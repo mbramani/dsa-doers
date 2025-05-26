@@ -1,22 +1,25 @@
 {
-  "name": "shadcn-ui-monorepo",
-  "version": "0.0.1",
+  "name": "dsa-doers",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "turbo build",
-    "dev": "turbo dev",
-    "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    "dev": "concurrently \"pnpm dev:web\" \"pnpm dev:server\"",
+    "dev:web": "cd web && pnpm dev",
+    "dev:server": "cd server && pnpm dev",
+    "build": "pnpm build:web && pnpm build:server",
+    "build:web": "cd web && pnpm build",
+    "build:server": "cd server && pnpm build",
+    "start": "concurrently \"pnpm start:web\" \"pnpm start:server\"",
+    "start:web": "cd web && pnpm start",
+    "start:server": "cd server && pnpm start",
+    "lint": "pnpm lint:web && pnpm lint:server",
+    "lint:web": "cd web && pnpm lint",
+    "lint:server": "cd server && pnpm lint",
+    "format": "pnpm format:web && pnpm format:server",
+    "format:web": "cd web && pnpm format",
+    "format:server": "cd server && pnpm format"
   },
   "devDependencies": {
-    "@workspace/eslint-config": "workspace:*",
-    "@workspace/typescript-config": "workspace:*",
-    "prettier": "^3.5.1",
-    "turbo": "^2.4.2",
-    "typescript": "5.7.3"
-  },
-  "packageManager": "pnpm@10.4.1",
-  "engines": {
-    "node": ">=20"
+    "concurrently": "^8.2.2"
   }
 }
