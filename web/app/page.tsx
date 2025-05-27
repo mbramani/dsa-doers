@@ -1,124 +1,145 @@
 "use client";
 
-import { useAuth, useDiscordAuth, useLogout } from "@/hooks/auth";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getRoleColor, getRoleDisplayName } from "@/lib/role-utils";
 
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { UserRole } from "@/types/api";
+import { useAuth } from "@/hooks/auth";
 
 export default function HomePage() {
-  const { data: user, isLoading, error } = useAuth();
-  const discordAuth = useDiscordAuth();
-  const logout = useLogout();
-
-  const getRoleBadgeColor = (role: UserRole) => {
-    switch (role) {
-      case UserRole.NEWBIE:
-        return "bg-green-100 text-green-800";
-      case UserRole.MEMBER:
-        return "bg-blue-100 text-blue-800";
-      case UserRole.CONTRIBUTOR:
-        return "bg-purple-100 text-purple-800";
-      case UserRole.MODERATOR:
-        return "bg-yellow-100 text-yellow-800";
-      case UserRole.ADMIN:
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
-  }
+  const { data: user, isLoading } = useAuth();
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="flex flex-col items-center justify-center gap-6 max-w-md text-center">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          DSA Doers
-        </h1>
-        <p className="text-muted-foreground text-lg">
-          Join our community of data structures and algorithms enthusiasts!
-        </p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="container mx-auto px-4 py-16">
+        <div className="text-center mb-16">
+          <h1 className="text-5xl font-bold text-gray-900 dark:text-white mb-6">
+            DSA Doers
+          </h1>
+          <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
+            Master Data Structures & Algorithms with our community-driven platform.
+            Level up your coding skills and advance your career.
+          </p>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-            {error.message || "Something went wrong"}
-          </div>
-        )}
-
-        {user ? (
-          <div className="flex flex-col gap-4 items-center">
-            <div className="flex items-center gap-3">
-              {user.avatar_url && (
-                <img
-                  src={user.avatar_url}
-                  alt={user.username}
-                  className="w-12 h-12 rounded-full"
-                />
-              )}
-              <div className="text-left">
-                <p className="text-green-600 font-medium">
-                  Welcome, {user.username}!
-                </p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}
-                  >
-                    {user.role.toUpperCase()}
-                  </span>
-                  {user.role === UserRole.NEWBIE && (
-                    <span className="text-xs text-muted-foreground">
-                      🎉 New Member!
-                    </span>
-                  )}
+          {!isLoading && (
+            <div className="flex gap-4 justify-center">
+              {user ? (
+                <div className="flex items-center gap-4">
+                  <div className="text-center">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Welcome back, {user.username}!
+                    </p>
+                    <div
+                      className="inline-block px-3 py-1 rounded-full text-xs font-medium text-white mt-1"
+                      style={{ backgroundColor: getRoleColor(user.role) }}
+                    >
+                      {getRoleDisplayName(user.role)}
+                    </div>
+                    {user.role === UserRole.NEWBIE && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Complete challenges to level up!
+                      </p>
+                    )}
+                  </div>
+                  <Link href="/dashboard">
+                    <Button size="lg">Go to Dashboard</Button>
+                  </Link>
                 </div>
-              </div>
+              ) : (
+                <Link href="/api/auth/discord">
+                  <Button size="lg" className="bg-[#5865F2] hover:bg-[#4752C4] text-white">
+                    🎮 Login with Discord
+                  </Button>
+                </Link>
+              )}
             </div>
+          )}
+        </div>
 
-            <div className="flex gap-3">
-              <Button asChild>
-                <Link href="/dashboard">Go to Dashboard</Link>
-              </Button>
-              <Button
-                onClick={() => logout.mutate()}
-                variant="outline"
-                disabled={logout.isPending}
-              >
-                {logout.isPending ? "Logging out..." : "Logout"}
-              </Button>
+        {/* Features Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                🎯 <span>Practice Problems</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 dark:text-gray-400">
+                Solve curated problems ranging from basic to advanced levels.
+                Track your progress and improve systematically.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                👥 <span>Community</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 dark:text-gray-400">
+                Join our Discord community to discuss solutions, get help,
+                and participate in coding challenges.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                🏆 <span>Role System</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 dark:text-gray-400">
+                Advance through roles from 🌱 Newbie to 👑 Admin based on
+                your contributions and achievements.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Role Progression */}
+        <Card className="max-w-4xl mx-auto">
+          <CardHeader>
+            <CardTitle className="text-center">🎖️ Role Progression</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              {Object.values(UserRole).map((role, index) => (
+                <div
+                  key={role}
+                  className="text-center p-4 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700"
+                  style={{
+                    borderColor: user?.role === role ? getRoleColor(role) : undefined,
+                    backgroundColor: user?.role === role ? `${getRoleColor(role)}10` : undefined,
+                  }}
+                >
+                  <div
+                    className="w-12 h-12 rounded-full mx-auto mb-2 flex items-center justify-center text-white font-bold"
+                    style={{ backgroundColor: getRoleColor(role) }}
+                  >
+                    {index + 1}
+                  </div>
+                  <h4 className="font-medium text-sm mb-1">
+                    {getRoleDisplayName(role)}
+                  </h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {role === UserRole.NEWBIE && "Starting point"}
+                    {role === UserRole.MEMBER && "Active learner"}
+                    {role === UserRole.CONTRIBUTOR && "Problem solver"}
+                    {role === UserRole.MODERATOR && "Community helper"}
+                    {role === UserRole.ADMIN && "Platform manager"}
+                  </p>
+                </div>
+              ))}
             </div>
-
-            {user.discordProfile && !user.discordProfile.guild_joined && (
-              <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg text-sm">
-                <p>Join our Discord server to connect with the community!</p>
-                <Button asChild className="mt-2" size="sm">
-                  {/* <a href={discordService.getInviteUrl()} target="_blank" rel="noopener noreferrer">
-                    Join Discord
-                  </a> */}
-                </Button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <Button
-            onClick={() => discordAuth.mutate()}
-            size="lg"
-            className="bg-[#5865F2] hover:bg-[#4752C4]"
-            disabled={discordAuth.isPending}
-          >
-            {discordAuth.isPending ? (
-              "Redirecting..."
-            ) : (
-              <>🎮 Join DSA Doers Discord</>
-            )}
-          </Button>
-        )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -9,10 +9,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getRoleBadgeVariant, getRoleDescription, getRoleDisplayName } from "@/lib/role-utils";
 import { useAuth, useLogout } from "@/hooks/auth";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserRole } from "@/types/api";
@@ -32,11 +34,7 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="space-y-4 w-96">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-48 w-full" />
-          <Skeleton className="h-48 w-full" />
-        </div>
+        <div className="animate-spin text-6xl">😊</div>
       </div>
     );
   }
@@ -44,40 +42,6 @@ export default function DashboardPage() {
   if (!user) {
     return null;
   }
-
-  const getRoleDescription = (role: UserRole) => {
-    switch (role) {
-      case UserRole.NEWBIE:
-        return "Welcome to DSA Doers! Complete challenges to advance your role.";
-      case UserRole.MEMBER:
-        return "You're an active member! Keep solving problems to become a contributor.";
-      case UserRole.CONTRIBUTOR:
-        return "Great work! You're contributing to the community.";
-      case UserRole.MODERATOR:
-        return "You help moderate the community. Thank you for your service!";
-      case UserRole.ADMIN:
-        return "You have full administrative privileges.";
-      default:
-        return "";
-    }
-  };
-
-  const getRoleBadgeVariant = (role: UserRole) => {
-    switch (role) {
-      case UserRole.NEWBIE:
-        return "success";
-      case UserRole.MEMBER:
-        return "default";
-      case UserRole.CONTRIBUTOR:
-        return "secondary";
-      case UserRole.MODERATOR:
-        return "warning";
-      case UserRole.ADMIN:
-        return "destructive";
-      default:
-        return "outline";
-    }
-  };
 
   return (
     <div className="min-h-screen">
@@ -132,7 +96,9 @@ export default function DashboardPage() {
               <div>
                 <span className="text-sm font-medium">Role:</span>
                 <div className="mt-1">
-                  <Badge>{user.role.toUpperCase()}</Badge>
+                  <Badge variant={getRoleBadgeVariant(user.role)}>
+                    {getRoleDisplayName(user.role)}
+                  </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground mt-2">
                   {getRoleDescription(user.role)}
@@ -157,89 +123,93 @@ export default function DashboardPage() {
               {user.discordProfile ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span className="text-sm font-medium">Connected</span>
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm">Connected</span>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Username: {user.discordProfile.discord_username}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Server Status:{" "}
-                    {user.discordProfile.guild_joined ? (
-                      <Badge className="ml-1">Joined</Badge>
-                    ) : (
-                      <Badge variant="destructive" className="ml-1">
-                        Not Joined
-                      </Badge>
-                    )}
-                  </p>
-                  {!user.discordProfile.guild_joined && (
-                    <Button size="sm" asChild>
-                      <a href="#" target="_blank" rel="noopener noreferrer">
-                        Join Discord Server
-                      </a>
-                    </Button>
-                  )}
+
+                  <div>
+                    <span className="text-sm font-medium">Discord Username:</span>
+                    <p className="text-sm text-muted-foreground">
+                      {user.discordProfile.discord_username}
+                    </p>
+                  </div>
+
+                  <div>
+                    <span className="text-sm font-medium">Server Status:</span>
+                    <p className="text-sm text-muted-foreground">
+                      {user.discordProfile.guild_joined ? "✅ Joined" : "❌ Not joined"}
+                    </p>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <span className="text-sm font-medium">Not Connected</span>
+                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                    <span className="text-sm">Not connected</span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Connect your Discord account to join our community.
+                    Connect your Discord account to join our server.
                   </p>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Quick Stats */}
-          <Card>
+          {/* Quick Actions */}
+            <Card>
             <CardHeader>
-              <CardTitle>Quick Stats</CardTitle>
+              <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">0</div>
-                <div className="text-sm text-muted-foreground">
-                  Problems Solved
+            <CardContent className="space-y-3">
+              {user.role === UserRole.ADMIN && (
+              <Button asChild className="w-full" variant="outline">
+                <Link href="/admin">🛠️ Admin Panel</Link>
+              </Button>
+              )}
+              {(user.role === UserRole.ADMIN || user.role === UserRole.MODERATOR) && (
+              <Button asChild className="w-full" variant="outline">
+                <Link href="/admin/users">⚡ Moderation Tools</Link>
+              </Button>
+              )}
+              <Button asChild className="w-full" variant="outline">
+              <Link href="/challenges">🎯 View Challenges</Link>
+              </Button>
+              <Button asChild className="w-full" variant="outline">
+              <Link href="/stats">📊 My Stats</Link>
+              </Button>
+            </CardContent>
+            </Card>
+        </div>
+
+        {/* Role-specific content */}
+        {user.role === UserRole.NEWBIE && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>🌱 Welcome to DSA Doers!</CardTitle>
+              <CardDescription>
+                Get started with your journey in Data Structures and Algorithms
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-medium mb-2">📚 Start Learning</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Begin with basic concepts and work your way up
+                  </p>
+                  <Button size="sm">View Beginner Guide</Button>
                 </div>
-              </div>
-              <Separator />
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">0</div>
-                <div className="text-sm text-muted-foreground">
-                  Contributions
-                </div>
-              </div>
-              <Separator />
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">0</div>
-                <div className="text-sm text-muted-foreground">
-                  Study Streak
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-medium mb-2">👥 Join Community</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Connect with other learners on Discord
+                  </p>
+                  <Button size="sm" variant="outline">Join Discord</Button>
                 </div>
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Recent Activity */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center text-muted-foreground py-8">
-              <p>
-                No recent activity. Start solving problems to see your progress
-                here!
-              </p>
-              <Button className="mt-4">Browse Problems</Button>
-            </div>
-          </CardContent>
-        </Card>
+        )}
       </main>
     </div>
   );

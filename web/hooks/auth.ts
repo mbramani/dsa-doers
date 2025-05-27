@@ -15,7 +15,7 @@ const authApi = {
   },
 
   logout: async () => {
-    const response = await apiClient.post("/auth/logout");
+    const response = await apiClient.post("/auth/discord/logout");
     return response.data;
   },
 };
