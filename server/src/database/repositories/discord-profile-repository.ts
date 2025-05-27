@@ -1,12 +1,19 @@
-import { CreateDiscordProfileData, DiscordProfile } from "@/types/api";
+import {
+  CreateDiscordProfileInput,
+  DiscordProfileEntity,
+} from "@/types/database";
 
+import { CreateDiscordProfileData } from "@/types/service";
+import { DiscordProfile } from "@/types/api";
 import { createLogger } from "@/utils/logger";
 import { db } from "../db-client";
 
 const logger = createLogger("discord-profile-repository");
 
 export class DiscordProfileRepository {
-  async create(profileData: CreateDiscordProfileData): Promise<DiscordProfile> {
+  async create(
+    profileData: CreateDiscordProfileData,
+  ): Promise<DiscordProfileEntity> {
     try {
       const query = `
         INSERT INTO discord_profiles (
@@ -39,7 +46,9 @@ export class DiscordProfileRepository {
     }
   }
 
-  async findByDiscordId(discordId: string): Promise<DiscordProfile | null> {
+  async findByDiscordId(
+    discordId: string,
+  ): Promise<DiscordProfileEntity | null> {
     try {
       const query = "SELECT * FROM discord_profiles WHERE discord_id = $1";
       const result = await db.query(query, [discordId]);
@@ -54,7 +63,7 @@ export class DiscordProfileRepository {
     }
   }
 
-  async findByUserId(userId: string): Promise<DiscordProfile | null> {
+  async findByUserId(userId: string): Promise<DiscordProfileEntity | null> {
     try {
       const query = "SELECT * FROM discord_profiles WHERE user_id = $1";
       const result = await db.query(query, [userId]);
@@ -72,7 +81,7 @@ export class DiscordProfileRepository {
   async updateGuildJoined(
     discordId: string,
     joined: boolean,
-  ): Promise<DiscordProfile> {
+  ): Promise<DiscordProfileEntity> {
     try {
       const query = `
         UPDATE discord_profiles 
@@ -103,7 +112,7 @@ export class DiscordProfileRepository {
     accessToken: string,
     refreshToken?: string,
     expiresAt?: Date,
-  ): Promise<DiscordProfile> {
+  ): Promise<DiscordProfileEntity> {
     try {
       const query = `
         UPDATE discord_profiles 
@@ -126,6 +135,72 @@ export class DiscordProfileRepository {
         error,
         discordId,
       });
+      throw error;
+    }
+  }
+
+  async updateProfile(
+    discordId: string,
+    updates: {
+      discord_username?: string;
+      discord_discriminator?: string;
+      discord_avatar?: string;
+    },
+  ): Promise<DiscordProfileEntity> {
+    try {
+      const fields: string[] = [];
+      const values: any[] = [];
+      let paramCount = 1;
+
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value !== undefined) {
+          fields.push(`${key} = $${paramCount}`);
+          values.push(value);
+          paramCount++;
+        }
+      });
+
+      if (fields.length === 0) {
+        throw new Error("No fields to update");
+      }
+
+      fields.push(`updated_at = CURRENT_TIMESTAMP`);
+      values.push(discordId);
+
+      const query = `
+        UPDATE discord_profiles 
+        SET ${fields.join(", ")}
+        WHERE discord_id = $${paramCount}
+        RETURNING *
+      `;
+
+      const result = await db.query(query, values);
+
+      logger.info("Discord profile updated", { discordId, updates });
+      return result.rows[0];
+    } catch (error) {
+      logger.error("Failed to update discord profile", {
+        error,
+        discordId,
+        updates,
+      });
+      throw error;
+    }
+  }
+
+  async delete(userId: string): Promise<boolean> {
+    try {
+      const query = "DELETE FROM discord_profiles WHERE user_id = $1";
+      const result = await db.query(query, [userId]);
+
+      const success = (result.rowCount ?? 0) > 0;
+      if (success) {
+        logger.info("Discord profile deleted", { userId });
+      }
+
+      return success;
+    } catch (error) {
+      logger.error("Failed to delete discord profile", { error, userId });
       throw error;
     }
   }

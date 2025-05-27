@@ -11,14 +11,18 @@ export interface AuthRequest extends Request {
   };
 }
 
-export async function authenticateToken(req: AuthRequest, res: Response, next: NextFunction) {
+export async function authenticateToken(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const token = req.cookies["auth-token"];
-    
+
     if (!token) {
       return res.status(401).json({
         status: "error",
-        message: "No authentication token"
+        message: "No authentication token",
       });
     }
 
@@ -27,8 +31,8 @@ export async function authenticateToken(req: AuthRequest, res: Response, next: N
     next();
   } catch (error) {
     return res.status(403).json({
-      status: "error", 
-      message: "Invalid token"
+      status: "error",
+      message: "Invalid token",
     });
   }
 }
@@ -38,7 +42,7 @@ export function requireRole(roles: UserRole[]) {
     if (!req.user || !roles.includes(req.user.role)) {
       return res.status(403).json({
         status: "error",
-        message: "Insufficient permissions"
+        message: "Insufficient permissions",
       });
     }
     next();
