@@ -30,5 +30,5 @@ CREATE INDEX idx_discord_profiles_discord_id ON discord_profiles(discord_id);
 
 -- DOWN migration
 --@DOWN
+DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS discord_profiles;
-DROP TABLE IF EXISTS users;4

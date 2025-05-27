@@ -7,7 +7,10 @@
     "build": "tsc && tsc-alias",
     "start": "node dist/app.js",
     "lint": "eslint src --ext .ts",
-    "format": "pnpm prettier --write ."
+    "format": "pnpm prettier --write .",
+    "migration:create": "node src/scripts/create-migration.mjs",
+    "migrate:up": "tsx src/database/migrations/run.ts up",
+    "migrate:down": "tsx src/database/migrations/run.ts down"
   },
   "dependencies": {
     "colors": "^1.4.0",

@@ -4,7 +4,7 @@ import path from "path";
 import readline from "readline";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const sqlDir = path.join(__dirname, "../sql");
+const sqlDir = path.join(__dirname, "../database/sql");
 
 const rl = readline.createInterface({
   input: process.stdin,

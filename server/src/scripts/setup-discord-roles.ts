@@ -1,5 +1,5 @@
 import { createLogger } from "@/utils/logger";
-import { discordService } from "../services/discord-service";
+import { discordService } from "@/services/discord-service";
 
 const logger = createLogger("setup-script");
 

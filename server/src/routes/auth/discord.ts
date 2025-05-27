@@ -37,12 +37,12 @@ router.get("/callback", async (req: Request, res: Response) => {
     const { code, error } = req.query;
 
     if (error) {
-      return res.redirect(`http://localhost:3000/auth/error?error=${error}`);
+      return res.redirect(`${config.env.frontend.url}/auth/error?error=${error}`);
     }
 
     if (!code || typeof code !== "string") {
       return res.redirect(
-        `http://localhost:3000/auth/error?error=missing_code`,
+        `${config.env.frontend.url}/auth/error?error=missing_code`,
       );
     }
 
@@ -58,7 +58,7 @@ router.get("/callback", async (req: Request, res: Response) => {
     });
 
     // Redirect to frontend with success status
-    const redirectUrl = new URL(`http://localhost:3000/auth/success`);
+    const redirectUrl = new URL(`${config.env.frontend.url}/auth/success`);
 
     if (authResult.isNewUser) {
       redirectUrl.searchParams.set("newUser", "true");
@@ -73,7 +73,7 @@ router.get("/callback", async (req: Request, res: Response) => {
     logger.error("Discord OAuth callback error", {
       error: error instanceof Error ? error.message : error,
     });
-    res.redirect(`http://localhost:3000/auth/error?error=auth_failed`);
+    res.redirect(`${config.env.frontend.url}/auth/error?error=auth_failed`);
   }
 });
 
