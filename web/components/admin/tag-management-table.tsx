@@ -73,8 +73,8 @@ import { getTagCategoryDisplayName } from "@/lib/tag-utils";
 import { toast } from "sonner";
 
 // Pagination configuration
-const ITEMS_PER_PAGE_OPTIONS = [12, 24, 48, 96];
-const DEFAULT_ITEMS_PER_PAGE = 24;
+const ITEMS_PER_PAGE_OPTIONS = [10, 20, 50, 100];
+const DEFAULT_ITEMS_PER_PAGE = 20;
 
 export default function TagManagementTable() {
   const [viewMode, setViewMode] = useState<"table" | "grid">("grid");
@@ -455,7 +455,7 @@ export default function TagManagementTable() {
               </div>
 
               <Button onClick={() => setCreateDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4" />
                 Create Tag
               </Button>
             </div>
