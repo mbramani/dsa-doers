@@ -9,7 +9,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getRoleBadgeVariant, getRoleDescription, getRoleDisplayName } from "@/lib/role-utils";
+import {
+  getRoleBadgeVariant,
+  getRoleDescription,
+  getRoleDisplayName,
+} from "@/lib/role-utils";
 import { useAuth, useLogout } from "@/hooks/auth";
 
 import { Badge } from "@/components/ui/badge";
@@ -128,7 +132,9 @@ export default function DashboardPage() {
                   </div>
 
                   <div>
-                    <span className="text-sm font-medium">Discord Username:</span>
+                    <span className="text-sm font-medium">
+                      Discord Username:
+                    </span>
                     <p className="text-sm text-muted-foreground">
                       {user.discordProfile.discord_username}
                     </p>
@@ -137,7 +143,9 @@ export default function DashboardPage() {
                   <div>
                     <span className="text-sm font-medium">Server Status:</span>
                     <p className="text-sm text-muted-foreground">
-                      {user.discordProfile.guild_joined ? "✅ Joined" : "❌ Not joined"}
+                      {user.discordProfile.guild_joined
+                        ? "✅ Joined"
+                        : "❌ Not joined"}
                     </p>
                   </div>
                 </div>
@@ -156,29 +164,30 @@ export default function DashboardPage() {
           </Card>
 
           {/* Quick Actions */}
-            <Card>
+          <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {user.role === UserRole.ADMIN && (
-              <Button asChild className="w-full" variant="outline">
-                <Link href="/admin">🛠️ Admin Panel</Link>
-              </Button>
+                <Button asChild className="w-full" variant="outline">
+                  <Link href="/admin">🛠️ Admin Panel</Link>
+                </Button>
               )}
-              {(user.role === UserRole.ADMIN || user.role === UserRole.MODERATOR) && (
-              <Button asChild className="w-full" variant="outline">
-                <Link href="/admin/users">⚡ Moderation Tools</Link>
-              </Button>
+              {(user.role === UserRole.ADMIN ||
+                user.role === UserRole.MODERATOR) && (
+                <Button asChild className="w-full" variant="outline">
+                  <Link href="/admin/users">⚡ Moderation Tools</Link>
+                </Button>
               )}
               <Button asChild className="w-full" variant="outline">
-              <Link href="/challenges">🎯 View Challenges</Link>
+                <Link href="/challenges">🎯 View Challenges</Link>
               </Button>
               <Button asChild className="w-full" variant="outline">
-              <Link href="/stats">📊 My Stats</Link>
+                <Link href="/stats">📊 My Stats</Link>
               </Button>
             </CardContent>
-            </Card>
+          </Card>
         </div>
 
         {/* Role-specific content */}
@@ -204,7 +213,9 @@ export default function DashboardPage() {
                   <p className="text-sm text-muted-foreground mb-3">
                     Connect with other learners on Discord
                   </p>
-                  <Button size="sm" variant="outline">Join Discord</Button>
+                  <Button size="sm" variant="outline">
+                    Join Discord
+                  </Button>
                 </div>
               </div>
             </CardContent>

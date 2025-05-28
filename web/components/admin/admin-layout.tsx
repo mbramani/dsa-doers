@@ -6,8 +6,9 @@ import {
   LogOut,
   Menu,
   Settings,
+  Tags,
   Users,
-  X
+  X,
 } from "lucide-react";
 import { useAuth, useLogout } from "@/hooks/auth";
 
@@ -26,6 +27,7 @@ interface AdminLayoutProps {
 const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Users", href: "/admin/users", icon: Users },
+  { name: "Tags", href: "/admin/tags", icon: Tags },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
@@ -43,7 +45,7 @@ function SidebarContent({ pathname }: { pathname: string }) {
                     pathname === item.href
                       ? "bg-accent text-accent-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
-                    "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium"
+                    "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium",
                   )}
                 >
                   <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
@@ -70,7 +72,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <div
         className={cn(
           "fixed inset-0 z-50 lg:hidden",
-          sidebarOpen ? "block" : "hidden"
+          sidebarOpen ? "block" : "hidden",
         )}
       >
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm" />
@@ -119,7 +121,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <div className="flex items-center gap-x-4 lg:gap-x-6">
               {/* Theme Toggle */}
               <ThemeToggle />
-              
+
               {/* User menu */}
               <div className="flex items-center gap-3">
                 <Avatar className="h-8 w-8">

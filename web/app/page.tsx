@@ -2,14 +2,19 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getRoleColor, getRoleDisplayName } from "@/lib/role-utils";
+import { useAuth, useDiscordAuth } from "@/hooks/auth";
 
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { UserRole } from "@/types/api";
-import { useAuth } from "@/hooks/auth";
 
 export default function HomePage() {
   const { data: user, isLoading } = useAuth();
+  const discordAuthMutation = useDiscordAuth();
+
+  const handleDiscordLogin = () => {
+    discordAuthMutation.mutate();
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
@@ -19,8 +24,8 @@ export default function HomePage() {
             DSA Doers
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-            Master Data Structures & Algorithms with our community-driven platform.
-            Level up your coding skills and advance your career.
+            Master Data Structures & Algorithms with our community-driven
+            platform. Level up your coding skills and advance your career.
           </p>
 
           {!isLoading && (
@@ -48,11 +53,21 @@ export default function HomePage() {
                   </Link>
                 </div>
               ) : (
-                <Link href="/api/auth/discord">
-                  <Button size="lg" className="bg-[#5865F2] hover:bg-[#4752C4] text-white">
-                    🎮 Login with Discord
-                  </Button>
-                </Link>
+                <Button
+                  size="lg"
+                  className="bg-[#5865F2] hover:bg-[#4752C4] text-white"
+                  onClick={handleDiscordLogin}
+                  disabled={discordAuthMutation.isPending}
+                >
+                  {discordAuthMutation.isPending ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Redirecting...
+                    </>
+                  ) : (
+                    <>🎮 Login with Discord</>
+                  )}
+                </Button>
               )}
             </div>
           )}
@@ -82,8 +97,8 @@ export default function HomePage() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 dark:text-gray-400">
-                Join our Discord community to discuss solutions, get help,
-                and participate in coding challenges.
+                Join our Discord community to discuss solutions, get help, and
+                participate in coding challenges.
               </p>
             </CardContent>
           </Card>
@@ -91,13 +106,14 @@ export default function HomePage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                🏆 <span>Role System</span>
+                🏆 <span>Tags & Achievements</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 dark:text-gray-400">
-                Advance through roles from 🌱 Newbie to 👑 Admin based on
-                your contributions and achievements.
+                Earn tags and achievements that reflect your skills and
+                contributions. Show them off in Discord with automatic role
+                sync!
               </p>
             </CardContent>
           </Card>
@@ -115,8 +131,12 @@ export default function HomePage() {
                   key={role}
                   className="text-center p-4 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700"
                   style={{
-                    borderColor: user?.role === role ? getRoleColor(role) : undefined,
-                    backgroundColor: user?.role === role ? `${getRoleColor(role)}10` : undefined,
+                    borderColor:
+                      user?.role === role ? getRoleColor(role) : undefined,
+                    backgroundColor:
+                      user?.role === role
+                        ? `${getRoleColor(role)}10`
+                        : undefined,
                   }}
                 >
                   <div

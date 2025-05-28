@@ -11,9 +11,9 @@ interface AdminProtectionProps {
   requiredRoles?: UserRole[];
 }
 
-export default function AdminProtection({ 
-  children, 
-  requiredRoles = [UserRole.ADMIN, UserRole.MODERATOR] 
+export default function AdminProtection({
+  children,
+  requiredRoles = [UserRole.ADMIN, UserRole.MODERATOR],
 }: AdminProtectionProps) {
   const { data: user, isLoading } = useAuth();
 
@@ -23,7 +23,7 @@ export default function AdminProtection({
     }
   }, [user, isLoading, requiredRoles]);
 
-   if (isLoading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin text-6xl">😊</div>

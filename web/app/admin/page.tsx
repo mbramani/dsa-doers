@@ -13,12 +13,13 @@ export default function AdminDashboardPage() {
           <div>
             <h1 className="text-3xl font-bold">Admin Dashboard</h1>
             <p className="text-muted-foreground">
-              Manage users, monitor community activity, and configure system settings.
+              Manage users, monitor community activity, and configure system
+              settings.
             </p>
           </div>
 
           {/* Dashboard Stats */}
-          <AdminStats/>
+          <AdminStats />
         </div>
       </AdminLayout>
     </AdminProtection>

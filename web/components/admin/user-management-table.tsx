@@ -40,7 +40,7 @@ import {
   useAdminUsers,
   useDeleteUser,
   useSyncDiscord,
-  useUpdateUserRole
+  useUpdateUserRole,
 } from "@/hooks/admin";
 
 import { Badge } from "@/components/ui/badge";
@@ -55,9 +55,16 @@ import { useState } from "react";
 export default function UserManagementTable() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [selectedRole, setSelectedRole] = useState<{ userId: string; role: UserRole } | null>(null);
+  const [selectedRole, setSelectedRole] = useState<{
+    userId: string;
+    role: UserRole;
+  } | null>(null);
 
-  const { data, isLoading, error, refetch, isRefetching} = useAdminUsers(page, 20, search);
+  const { data, isLoading, error, refetch, isRefetching } = useAdminUsers(
+    page,
+    20,
+    search,
+  );
   const updateRole = useUpdateUserRole();
   const deleteUser = useDeleteUser();
   const syncDiscord = useSyncDiscord();
@@ -109,30 +116,34 @@ export default function UserManagementTable() {
     <Card>
       <CardHeader>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <CardTitle className="text-xl font-semibold">Users ({pagination.total || 0})</CardTitle>
+          <CardTitle className="text-xl font-semibold">
+            Users ({pagination.total || 0})
+          </CardTitle>
           <div className="flex flex-col sm:flex-row gap-2">
-        <div className="relative">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search users..."
-            value={search}
-            onChange={(e) => {
-          setSearch(e.target.value);
-          setPage(1);
-            }}
-            className="pl-8 w-full sm:w-64"
-          />
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isRefetching}
-          className="flex items-center gap-2"
-        >
-          <RefreshCw className={cn("h-4 w-4", isRefetching && "animate-spin")} />
-          Refresh
-        </Button>
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search users..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                className="pl-8 w-full sm:w-64"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isRefetching}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw
+                className={cn("h-4 w-4", isRefetching && "animate-spin")}
+              />
+              Refresh
+            </Button>
           </div>
         </div>
       </CardHeader>
@@ -161,10 +172,18 @@ export default function UserManagementTable() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                    <TableCell>
+                      <Skeleton className="h-5 w-16" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-20" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-16" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-8 w-8 ml-auto" />
+                    </TableCell>
                   </TableRow>
                 ))
               ) : users.length > 0 ? (
@@ -173,13 +192,18 @@ export default function UserManagementTable() {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src={user.avatar_url} alt={user.username} />
+                          <AvatarImage
+                            src={user.avatar_url}
+                            alt={user.username}
+                          />
                           <AvatarFallback>
                             {user.username?.charAt(0) || "U"}
                           </AvatarFallback>
                         </Avatar>
                         <div className="min-w-0">
-                          <p className="font-medium truncate">{user.username}</p>
+                          <p className="font-medium truncate">
+                            {user.username}
+                          </p>
                           <p className="text-sm text-muted-foreground truncate">
                             {user.email}
                           </p>
@@ -216,13 +240,17 @@ export default function UserManagementTable() {
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                           <span className="text-sm">
-                            {user.discordProfile.guild_joined ? "Joined" : "Connected"}
+                            {user.discordProfile.guild_joined
+                              ? "Joined"
+                              : "Connected"}
                           </span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                          <span className="text-sm text-muted-foreground">Not connected</span>
+                          <span className="text-sm text-muted-foreground">
+                            Not connected
+                          </span>
                         </div>
                       )}
                     </TableCell>
@@ -241,7 +269,9 @@ export default function UserManagementTable() {
                         <DropdownMenuContent align="end">
                           {user.discordProfile && (
                             <DropdownMenuItem
-                              onClick={() => handleSyncDiscord(user.id, user.username)}
+                              onClick={() =>
+                                handleSyncDiscord(user.id, user.username)
+                              }
                               disabled={syncDiscord.isPending}
                             >
                               <RefreshCw className="mr-2 h-4 w-4" />
@@ -260,16 +290,20 @@ export default function UserManagementTable() {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogTitle>
+                                  Are you sure?
+                                </AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  This will permanently delete {user.username}'s account.
-                                  This action cannot be undone.
+                                  This will permanently delete {user.username}'s
+                                  account. This action cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() => handleDeleteUser(user.id, user.username)}
+                                  onClick={() =>
+                                    handleDeleteUser(user.id, user.username)
+                                  }
                                   className="bg-destructive text-destructive-foreground"
                                 >
                                   Delete
@@ -297,7 +331,9 @@ export default function UserManagementTable() {
         {pagination.pages > 1 && (
           <div className="flex items-center justify-between mt-4">
             <p className="text-sm text-muted-foreground">
-              Showing {((page - 1) * 20) + 1} to {Math.min(page * 20, pagination.total)} of {pagination.total} users
+              Showing {(page - 1) * 20 + 1} to{" "}
+              {Math.min(page * 20, pagination.total)} of {pagination.total}{" "}
+              users
             </p>
             <div className="flex gap-2">
               <Button
@@ -321,8 +357,8 @@ export default function UserManagementTable() {
         )}
 
         {/* Role Update Confirmation */}
-        <AlertDialog 
-          open={!!selectedRole} 
+        <AlertDialog
+          open={!!selectedRole}
           onOpenChange={() => setSelectedRole(null)}
         >
           <AlertDialogContent>
@@ -330,8 +366,10 @@ export default function UserManagementTable() {
               <AlertDialogTitle>Update User Role</AlertDialogTitle>
               <AlertDialogDescription>
                 Are you sure you want to change this user's role to{" "}
-                <strong>{selectedRole ? getRoleDisplayName(selectedRole.role) : ""}</strong>?
-                This will also update their Discord server roles.
+                <strong>
+                  {selectedRole ? getRoleDisplayName(selectedRole.role) : ""}
+                </strong>
+                ? This will also update their Discord server roles.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
