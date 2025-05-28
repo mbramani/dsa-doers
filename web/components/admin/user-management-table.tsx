@@ -11,6 +11,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { AuthUser, UserRole } from "@/types/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -19,7 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, RefreshCw, Search, Trash2 } from "lucide-react";
+import { MoreHorizontal, RefreshCw, Search, Shield, Trash2, UserPlus, Users } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -35,6 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { format, formatDistanceToNow } from "date-fns";
 import { getRoleBadgeVariant, getRoleDisplayName } from "@/lib/role-utils";
 import {
   useAdminUsers,
@@ -47,7 +49,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserRole } from "@/types/api";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -76,8 +77,8 @@ export default function UserManagementTable() {
       await updateRole.mutateAsync(selectedRole);
       toast.success("User role has been updated successfully.");
       setSelectedRole(null);
-    } catch (error) {
-      toast.error("Failed to update user role.");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update user role.");
     }
   };
 
@@ -85,8 +86,8 @@ export default function UserManagementTable() {
     try {
       await deleteUser.mutateAsync(userId);
       toast.success(`${username} has been deleted successfully.`);
-    } catch (error) {
-      toast.error("Failed to delete user.");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete user.");
     }
   };
 
@@ -94,8 +95,8 @@ export default function UserManagementTable() {
     try {
       await syncDiscord.mutateAsync(userId);
       toast.success(`${username}'s Discord roles have been synced.`);
-    } catch (error) {
-      toast.error("Failed to sync Discord roles.");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to sync Discord roles.");
     }
   };
 
@@ -103,22 +104,43 @@ export default function UserManagementTable() {
     return (
       <Card>
         <CardContent className="pt-6">
-          <p className="text-destructive">Failed to load users</p>
+          <div className="text-center py-8">
+            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Failed to load users</h3>
+            <p className="text-muted-foreground mb-4">
+              There was an error loading the user data. Please try again.
+            </p>
+            <Button onClick={() => refetch()} variant="outline">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retry
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
   }
 
-  const users = data?.data?.users || [];
+  // Extract users and pagination from the API response structure
+  const users: AuthUser[] = data?.data?.data || []; // Note: data.data.data because of ApiResponse<PaginatedResponse<AuthUser>>
   const pagination = data?.data?.pagination || {};
 
   return (
     <Card>
       <CardHeader>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <CardTitle className="text-xl font-semibold">
-            Users ({pagination.total || 0})
-          </CardTitle>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+              <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <CardTitle className="text-xl font-semibold">
+                User Management
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {pagination.total || 0} total users
+              </p>
+            </div>
+          </div>
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -154,7 +176,8 @@ export default function UserManagementTable() {
               <TableRow>
                 <TableHead>User</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Discord</TableHead>
+                <TableHead>Discord Status</TableHead>
+                <TableHead>Tags</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -179,6 +202,9 @@ export default function UserManagementTable() {
                       <Skeleton className="h-4 w-20" />
                     </TableCell>
                     <TableCell>
+                      <Skeleton className="h-4 w-12" />
+                    </TableCell>
+                    <TableCell>
                       <Skeleton className="h-4 w-16" />
                     </TableCell>
                     <TableCell>
@@ -187,7 +213,7 @@ export default function UserManagementTable() {
                   </TableRow>
                 ))
               ) : users.length > 0 ? (
-                users.map((user: any) => (
+                users.map((user: AuthUser) => (
                   <TableRow key={user.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -197,16 +223,18 @@ export default function UserManagementTable() {
                             alt={user.username}
                           />
                           <AvatarFallback>
-                            {user.username?.charAt(0) || "U"}
+                            {user.username?.charAt(0)?.toUpperCase() || "U"}
                           </AvatarFallback>
                         </Avatar>
                         <div className="min-w-0">
                           <p className="font-medium truncate">
                             {user.username}
                           </p>
-                          <p className="text-sm text-muted-foreground truncate">
-                            {user.email}
-                          </p>
+                          {user.email && (
+                            <p className="text-sm text-muted-foreground truncate">
+                              {user.email}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </TableCell>
@@ -216,8 +244,9 @@ export default function UserManagementTable() {
                         onValueChange={(value: UserRole) =>
                           setSelectedRole({ userId: user.id, role: value })
                         }
+                        disabled={updateRole.isPending}
                       >
-                        <SelectTrigger className="w-40">
+                        <SelectTrigger className="w-32">
                           <SelectValue>
                             <Badge variant={getRoleBadgeVariant(user.role)}>
                               {getRoleDisplayName(user.role)}
@@ -227,9 +256,11 @@ export default function UserManagementTable() {
                         <SelectContent>
                           {Object.values(UserRole).map((role) => (
                             <SelectItem key={role} value={role}>
-                              <Badge variant={getRoleBadgeVariant(role)}>
-                                {getRoleDisplayName(role)}
-                              </Badge>
+                              <div className="flex items-center gap-2">
+                                <Badge variant={getRoleBadgeVariant(role)}>
+                                  {getRoleDisplayName(role)}
+                                </Badge>
+                              </div>
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -238,11 +269,19 @@ export default function UserManagementTable() {
                     <TableCell>
                       {user.discordProfile ? (
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <div className={cn(
+                            "w-2 h-2 rounded-full",
+                            user.discordProfile.guild_joined 
+                              ? "bg-green-500" 
+                              : "bg-yellow-500"
+                          )}></div>
                           <span className="text-sm">
                             {user.discordProfile.guild_joined
-                              ? "Joined"
+                              ? "In Guild"
                               : "Connected"}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            @{user.discordProfile.discord_username}
                           </span>
                         </div>
                       ) : (
@@ -255,9 +294,36 @@ export default function UserManagementTable() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm text-muted-foreground">
-                        {new Date(user.created_at).toLocaleDateString()}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        {user.tags && user.tags.length > 0 ? (
+                          <>
+                            <span className="text-sm font-medium">
+                              {user.tags.length}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              tag{user.tags.length !== 1 ? 's' : ''}
+                            </span>
+                            {user.tags.some(tag => tag.is_primary) && (
+                              <Badge variant="outline" className="text-xs">
+                                Primary
+                              </Badge>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">
+                            No tags
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <time
+                        dateTime={new Date(user.created_at).toISOString()}
+                        title={format(new Date(user.created_at), "PPpp")}
+                        className="text-sm text-muted-foreground"
+                      >
+                        {formatDistanceToNow(new Date(user.created_at), { addSuffix: true })}
+                      </time>
                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
@@ -278,6 +344,16 @@ export default function UserManagementTable() {
                               Sync Discord
                             </DropdownMenuItem>
                           )}
+                          <DropdownMenuItem
+                            onClick={() => {
+                              // Navigate to user details page or open user details modal
+                              // You can implement this based on your routing structure
+                              console.log('View user details:', user.id);
+                            }}
+                          >
+                            <Users className="mr-2 h-4 w-4" />
+                            View Details
+                          </DropdownMenuItem>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <DropdownMenuItem
@@ -291,11 +367,12 @@ export default function UserManagementTable() {
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>
-                                  Are you sure?
+                                  Delete User Account
                                 </AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  This will permanently delete {user.username}'s
-                                  account. This action cannot be undone.
+                                  Are you sure you want to delete <strong>{user.username}</strong>'s
+                                  account? This will remove their access to Discord and all associated data.
+                                  This action cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -304,9 +381,10 @@ export default function UserManagementTable() {
                                   onClick={() =>
                                     handleDeleteUser(user.id, user.username)
                                   }
-                                  className="bg-destructive text-destructive-foreground"
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  disabled={deleteUser.isPending}
                                 >
-                                  Delete
+                                  {deleteUser.isPending ? "Deleting..." : "Delete User"}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -318,8 +396,25 @@ export default function UserManagementTable() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
-                    <p className="text-muted-foreground">No users found</p>
+                  <TableCell colSpan={6} className="text-center py-8">
+                    <div className="flex flex-col items-center gap-2">
+                      <UserPlus className="h-8 w-8 text-muted-foreground" />
+                      <p className="text-muted-foreground">
+                        {search ? "No users found matching your search" : "No users found"}
+                      </p>
+                      {search && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSearch("");
+                            setPage(1);
+                          }}
+                        >
+                          Clear search
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               )}
@@ -328,27 +423,46 @@ export default function UserManagementTable() {
         </div>
 
         {/* Pagination */}
-        {pagination.pages > 1 && (
-          <div className="flex items-center justify-between mt-4">
-            <p className="text-sm text-muted-foreground">
-              Showing {(page - 1) * 20 + 1} to{" "}
-              {Math.min(page * 20, pagination.total)} of {pagination.total}{" "}
-              users
-            </p>
-            <div className="flex gap-2">
+        {pagination.totalPages > 1 && (
+          <div className="flex items-center justify-between mt-6 pt-4 border-t">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>
+                Showing {((page - 1) * 20) + 1} to{" "}
+                {Math.min(page * 20, pagination.total || 0)} of{" "}
+                {pagination.total || 0} users
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setPage(page - 1)}
-                disabled={page <= 1}
+                onClick={() => setPage(Math.max(1, page - 1))}
+                disabled={page <= 1 || isLoading}
               >
                 Previous
               </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, pagination.totalPages || 0) }, (_, i) => {
+                  const pageNum = i + 1;
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={page === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setPage(pageNum)}
+                      disabled={isLoading}
+                      className="w-8 h-8 p-0"
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+              </div>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setPage(page + 1)}
-                disabled={page >= pagination.pages}
+                onClick={() => setPage(Math.min(pagination.totalPages || 1, page + 1))}
+                disabled={page >= (pagination.totalPages || 1) || isLoading}
               >
                 Next
               </Button>
@@ -369,11 +483,13 @@ export default function UserManagementTable() {
                 <strong>
                   {selectedRole ? getRoleDisplayName(selectedRole.role) : ""}
                 </strong>
-                ? This will also update their Discord server roles.
+                ? This will also update their Discord server roles and permissions.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel disabled={updateRole.isPending}>
+                Cancel
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleRoleUpdate}
                 disabled={updateRole.isPending}
