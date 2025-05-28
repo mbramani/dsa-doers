@@ -59,9 +59,8 @@ router.get("/callback", async (req: Request, res: Response) => {
     res.cookie("auth-token", authResult.token, {
       httpOnly: true,
       secure: config.env.server.environment === "production",
-      sameSite: "lax",
+      sameSite: "none",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      path: "/",
     });
 
     // Redirect to frontend with success status
