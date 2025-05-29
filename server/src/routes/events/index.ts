@@ -186,7 +186,10 @@ router.post(
         }
       }
 
-      const event = await eventRepository.createEvent(eventData, requiredTagIds);
+      const event = await eventRepository.createEvent(
+        eventData,
+        requiredTagIds,
+      );
 
       logger.info("Event created successfully", {
         eventId: event.id,
@@ -432,7 +435,10 @@ router.put(
         updateData.max_participants = req.body.max_participants;
       if (req.body.status !== undefined) updateData.status = req.body.status;
 
-      const updatedEvent = await eventRepository.updateEvent(eventId, updateData);
+      const updatedEvent = await eventRepository.updateEvent(
+        eventId,
+        updateData,
+      );
 
       if (!updatedEvent) {
         const response: ApiResponse = {

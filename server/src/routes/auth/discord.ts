@@ -8,6 +8,7 @@ import { discordService } from "@/services/discord-service";
 
 const router: Router = Router();
 const logger = createLogger("discord-auth");
+const isProduction: boolean = config.env.server.environment === "production";
 
 // GET /api/auth/discord - Get Discord OAuth URL
 router.get("/", (req: Request, res: Response) => {
@@ -58,8 +59,8 @@ router.get("/callback", async (req: Request, res: Response) => {
     // Set HTTP-only cookie with JWT token
     res.cookie("auth-token", authResult.token, {
       httpOnly: true,
-      secure: config.env.server.environment === "production",
-      sameSite: "lax",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -140,9 +141,8 @@ router.post("/logout", (req: Request, res: Response) => {
     // Clear the auth cookie
     res.clearCookie("auth-token", {
       httpOnly: true,
-      secure: config.env.server.environment === "production",
-      sameSite: "lax",
-      path: "/",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
     });
 
     const response: ApiResponse = {
