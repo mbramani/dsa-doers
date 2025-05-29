@@ -5,6 +5,7 @@ import { adminDiscordRouter } from "./admin/discord";
 import { adminTagsRouter } from "./admin/tags";
 import { adminUsersRouter } from "./admin/users";
 import { discordAuthRouter } from "./auth/discord";
+import { eventsRouter } from "./events";
 import { publicTagsRouter } from "./public/tags";
 
 const router: Router = Router();
@@ -14,6 +15,9 @@ router.use("/public/tags", publicTagsRouter);
 
 // Auth routes
 router.use("/auth/discord", discordAuthRouter);
+
+// Events routes
+router.use("/events", eventsRouter);
 
 // Admin routes (auth required)
 router.use("/admin/users", adminUsersRouter);

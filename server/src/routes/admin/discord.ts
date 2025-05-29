@@ -3,6 +3,7 @@ import { AuthRequest, authenticateToken, requireRole } from "@/middleware/auth";
 import { Response, Router } from "express";
 
 import { createLogger } from "@/utils/logger";
+import { discordChannelService } from "@/services/discord-channel-service";
 import { discordService } from "@/services/discord-service";
 import { tagService } from "@/services/tag-service";
 
@@ -11,6 +12,30 @@ const logger = createLogger("admin-discord");
 
 // Apply authentication to all routes
 router.use(authenticateToken);
+
+// GET /api/discord/channels - Get available Discord voice channels
+router.get(
+  "/channels",
+  authenticateToken,
+  requireRole([UserRole.ADMIN]),
+  async (req, res) => {
+    try {
+      const channels = await discordChannelService.getVoiceChannels();
+
+      res.json({
+        success: true,
+        data: channels,
+        message: "Discord channels fetched successfully",
+      });
+    } catch (error: any) {
+      console.error("Failed to fetch Discord channels:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to fetch Discord channels",
+      });
+    }
+  },
+);
 
 // POST /api/admin/discord/sync-user-tags/:userId - Sync user's tags with Discord
 router.post(

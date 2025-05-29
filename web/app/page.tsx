@@ -28,49 +28,58 @@ export default function HomePage() {
             platform. Level up your coding skills and advance your career.
           </p>
 
-          {!isLoading && (
-            <div className="flex gap-4 justify-center">
-              {user ? (
-                <div className="flex items-center gap-4">
-                  <div className="text-center">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Welcome back, {user.username}!
-                    </p>
-                    <div
-                      className="inline-block px-3 py-1 rounded-full text-xs font-medium text-white mt-1"
-                      style={{ backgroundColor: getRoleColor(user.role) }}
-                    >
-                      {getRoleDisplayName(user.role)}
-                    </div>
-                    {user.role === UserRole.NEWBIE && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Complete challenges to level up!
-                      </p>
-                    )}
+          {/* Authentication / Welcome Section */}
+          <div className="flex justify-center">
+            {isLoading ? (
+              <Button
+                size="lg"
+                className="flex items-center gap-2 opacity-75 cursor-not-allowed"
+                disabled
+              >
+                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-white" />
+                Loading…
+              </Button>
+            ) : user ? (
+              <div className="flex items-center gap-6">
+                <div className="text-center">
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    Welcome back,{" "}
+                    <span className="font-semibold">{user.username}</span>!
+                  </p>
+                  <div
+                    className="inline-block px-3 py-1 rounded-full text-xs font-medium text-white mt-2"
+                    style={{ backgroundColor: getRoleColor(user.role) }}
+                  >
+                    {getRoleDisplayName(user.role)}
                   </div>
-                  <Link href="/dashboard">
-                    <Button size="lg">Go to Dashboard</Button>
-                  </Link>
-                </div>
-              ) : (
-                <Button
-                  size="lg"
-                  className="bg-[#5865F2] hover:bg-[#4752C4] text-white"
-                  onClick={handleDiscordLogin}
-                  disabled={discordAuthMutation.isPending}
-                >
-                  {discordAuthMutation.isPending ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Redirecting...
-                    </>
-                  ) : (
-                    <>🎮 Login with Discord</>
+                  {user.role === UserRole.NEWBIE && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Complete challenges to level up!
+                    </p>
                   )}
-                </Button>
-              )}
-            </div>
-          )}
+                </div>
+                <Link href="/dashboard">
+                  <Button size="lg">Go to Dashboard</Button>
+                </Link>
+              </div>
+            ) : (
+              <Button
+                size="lg"
+                className="flex items-center gap-2 bg-[#5865F2] hover:bg-[#4752C4] text-white"
+                onClick={handleDiscordLogin}
+                disabled={discordAuthMutation.isPending}
+              >
+                {discordAuthMutation.isPending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                    Redirecting…
+                  </>
+                ) : (
+                  <>🎮 Login with Discord</>
+                )}
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Features Grid */}

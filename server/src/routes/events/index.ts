@@ -4,14 +4,15 @@ import {
   CreateEventInput,
   EventEntity,
   EventFilters,
+  EventListQuery,
   EventPaginationQuery,
   EventStatus,
   EventType,
   EventWithDetailsQuery,
   UpdateEventInput,
 } from "@/types/database";
+import { Request, Response } from "express";
 
-import { Response } from "express";
 import { Router } from "express";
 import { createLogger } from "@/utils/logger";
 import { discordChannelService } from "@/services/discord-channel-service";
@@ -220,6 +221,64 @@ router.post(
     }
   },
 );
+
+// GET /api/events/public - Get public events (no auth required)
+router.get("/public", async (req: Request, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = Math.min(parseInt(req.query.limit as string) || 12, 50);
+
+    const filters: EventFilters = {
+      // Only show active events publicly
+    };
+
+    // Add search filter if provided
+    if (req.query.search && typeof req.query.search === "string") {
+      filters.search = req.query.search.trim();
+    }
+
+    // Add event type filter if provided
+    if (req.query.event_type && typeof req.query.event_type === "string") {
+      filters.event_type = req.query.event_type as EventType;
+    }
+
+    const pagination: EventPaginationQuery = {
+      page,
+      limit,
+      sort_by: "start_time",
+      sort_order: "asc",
+    };
+
+    const result = await eventRepository.getEvents(filters, pagination);
+
+    const response: ApiResponse<PaginatedResponse<EventListQuery>> = {
+      status: "success",
+      message: "Public events fetched successfully",
+      data: {
+        data: result.events,
+        pagination: {
+          page,
+          limit,
+          total: result.total,
+          totalPages: Math.ceil(result.total / limit),
+          hasNext: page < Math.ceil(result.total / limit),
+          hasPrev: page > 1,
+        },
+      },
+    };
+
+    res.json(response);
+  } catch (error) {
+    logger.error("Failed to fetch public events", { error });
+
+    const response: ApiResponse = {
+      status: "error",
+      message: "Failed to fetch events",
+    };
+
+    res.status(500).json(response);
+  }
+});
 
 // GET /api/events - List events with filters
 router.get("/", async (req: AuthRequest, res: Response) => {

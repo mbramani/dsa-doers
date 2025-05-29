@@ -20,7 +20,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               ) {
                 return false;
               }
-              return failureCount < 3;
+              return failureCount < 1;
             },
           },
         },

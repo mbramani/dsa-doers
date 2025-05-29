@@ -20,7 +20,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, RefreshCw, Search, Shield, Trash2, UserPlus, Users } from "lucide-react";
+import {
+  MoreHorizontal,
+  RefreshCw,
+  Search,
+  Shield,
+  Trash2,
+  UserPlus,
+  Users,
+} from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -269,12 +277,14 @@ export default function UserManagementTable() {
                     <TableCell>
                       {user.discordProfile ? (
                         <div className="flex items-center gap-2">
-                          <div className={cn(
-                            "w-2 h-2 rounded-full",
-                            user.discordProfile.guild_joined 
-                              ? "bg-green-500" 
-                              : "bg-yellow-500"
-                          )}></div>
+                          <div
+                            className={cn(
+                              "w-2 h-2 rounded-full",
+                              user.discordProfile.guild_joined
+                                ? "bg-green-500"
+                                : "bg-yellow-500",
+                            )}
+                          ></div>
                           <span className="text-sm">
                             {user.discordProfile.guild_joined
                               ? "In Guild"
@@ -301,9 +311,9 @@ export default function UserManagementTable() {
                               {user.tags.length}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              tag{user.tags.length !== 1 ? 's' : ''}
+                              tag{user.tags.length !== 1 ? "s" : ""}
                             </span>
-                            {user.tags.some(tag => tag.is_primary) && (
+                            {user.tags.some((tag) => tag.is_primary) && (
                               <Badge variant="outline" className="text-xs">
                                 Primary
                               </Badge>
@@ -322,7 +332,9 @@ export default function UserManagementTable() {
                         title={format(new Date(user.created_at), "PPpp")}
                         className="text-sm text-muted-foreground"
                       >
-                        {formatDistanceToNow(new Date(user.created_at), { addSuffix: true })}
+                        {formatDistanceToNow(new Date(user.created_at), {
+                          addSuffix: true,
+                        })}
                       </time>
                     </TableCell>
                     <TableCell className="text-right">
@@ -348,7 +360,7 @@ export default function UserManagementTable() {
                             onClick={() => {
                               // Navigate to user details page or open user details modal
                               // You can implement this based on your routing structure
-                              console.log('View user details:', user.id);
+                              console.log("View user details:", user.id);
                             }}
                           >
                             <Users className="mr-2 h-4 w-4" />
@@ -370,9 +382,11 @@ export default function UserManagementTable() {
                                   Delete User Account
                                 </AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete <strong>{user.username}</strong>'s
-                                  account? This will remove their access to Discord and all associated data.
-                                  This action cannot be undone.
+                                  Are you sure you want to delete{" "}
+                                  <strong>{user.username}</strong>'s account?
+                                  This will remove their access to Discord and
+                                  all associated data. This action cannot be
+                                  undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -384,7 +398,9 @@ export default function UserManagementTable() {
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                   disabled={deleteUser.isPending}
                                 >
-                                  {deleteUser.isPending ? "Deleting..." : "Delete User"}
+                                  {deleteUser.isPending
+                                    ? "Deleting..."
+                                    : "Delete User"}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -400,7 +416,9 @@ export default function UserManagementTable() {
                     <div className="flex flex-col items-center gap-2">
                       <UserPlus className="h-8 w-8 text-muted-foreground" />
                       <p className="text-muted-foreground">
-                        {search ? "No users found matching your search" : "No users found"}
+                        {search
+                          ? "No users found matching your search"
+                          : "No users found"}
                       </p>
                       {search && (
                         <Button
@@ -427,7 +445,7 @@ export default function UserManagementTable() {
           <div className="flex items-center justify-between mt-6 pt-4 border-t">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>
-                Showing {((page - 1) * 20) + 1} to{" "}
+                Showing {(page - 1) * 20 + 1} to{" "}
                 {Math.min(page * 20, pagination.total || 0)} of{" "}
                 {pagination.total || 0} users
               </span>
@@ -442,26 +460,31 @@ export default function UserManagementTable() {
                 Previous
               </Button>
               <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(5, pagination.totalPages || 0) }, (_, i) => {
-                  const pageNum = i + 1;
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={page === pageNum ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setPage(pageNum)}
-                      disabled={isLoading}
-                      className="w-8 h-8 p-0"
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                })}
+                {Array.from(
+                  { length: Math.min(5, pagination.totalPages || 0) },
+                  (_, i) => {
+                    const pageNum = i + 1;
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={page === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setPage(pageNum)}
+                        disabled={isLoading}
+                        className="w-8 h-8 p-0"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  },
+                )}
               </div>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setPage(Math.min(pagination.totalPages || 1, page + 1))}
+                onClick={() =>
+                  setPage(Math.min(pagination.totalPages || 1, page + 1))
+                }
                 disabled={page >= (pagination.totalPages || 1) || isLoading}
               >
                 Next
@@ -483,7 +506,8 @@ export default function UserManagementTable() {
                 <strong>
                   {selectedRole ? getRoleDisplayName(selectedRole.role) : ""}
                 </strong>
-                ? This will also update their Discord server roles and permissions.
+                ? This will also update their Discord server roles and
+                permissions.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

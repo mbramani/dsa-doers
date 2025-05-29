@@ -9,7 +9,14 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { LayoutDashboard, LogOut, Settings, Tags, Users } from "lucide-react";
+import {
+  Calendar,
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  Tags,
+  Users,
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -58,6 +65,12 @@ const navigation = [
     href: "/admin/tags",
     icon: Tags,
     description: "Create and manage tags",
+  },
+  {
+    name: "Events",
+    href: "/admin/events",
+    icon: Calendar,
+    description: "Manage events and voice channel access",
   },
   {
     name: "Settings",
@@ -171,6 +184,9 @@ function DynamicBreadcrumb() {
           break;
         case "tags":
           breadcrumbs.push({ label: "Tags" });
+          break;
+        case "events":
+          breadcrumbs.push({ label: "Events" });
           break;
         case "settings":
           breadcrumbs.push({ label: "Settings" });
