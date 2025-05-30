@@ -3,7 +3,7 @@
 import * as z from "zod";
 
 import { Calendar, Clock, FileText, Hash, Loader2, Users } from "lucide-react";
-import { CreateEventInput, EventType } from "@/types/events";
+import { CreateEventInput, EventStatus, EventType } from "@/types/events";
 import {
   Dialog,
   DialogContent,

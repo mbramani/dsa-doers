@@ -1,5 +1,15 @@
 "use client";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar, Clock, Hash, Tag, User, Users } from "lucide-react";
 import {
@@ -10,6 +20,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  useBulkRevokeAccess,
+  useEventParticipants,
+} from "@/hooks/admin-events";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,7 +32,8 @@ import { EventWithDetails } from "@/types/events";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
-import { useEventParticipants } from "@/hooks/admin-events";
+import { toast } from "sonner";
+import { useState } from "react";
 
 interface EventDetailsModalProps {
   event: EventWithDetails | null;
@@ -35,10 +50,39 @@ export default function EventDetailsModal({
 }: EventDetailsModalProps) {
   const { data: participantsData, isLoading: participantsLoading } =
     useEventParticipants(event?.id || "", 1, 10);
+  const [bulkRevokeDialogOpen, setBulkRevokeDialogOpen] = useState(false);
+  const bulkRevokeAccess = useBulkRevokeAccess();
 
   if (!event) return null;
 
   const participants = participantsData?.data?.data || [];
+
+  const handleBulkRevokeAccess = async () => {
+    if (!event) return;
+
+    try {
+      // Get all users with granted access
+      const grantedUserIds = participants
+        .filter((p) => p.status === "granted")
+        .map((p) => p.user_id);
+
+      if (grantedUserIds.length === 0) {
+        toast.info("No users have access to revoke");
+        return;
+      }
+
+      await bulkRevokeAccess.mutateAsync({
+        eventId: event.id,
+        userIds: grantedUserIds,
+        reason: "admin_bulk_revoke",
+      });
+
+      setBulkRevokeDialogOpen(false);
+      onOpenChange(false);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to revoke access for all users");
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -220,8 +264,46 @@ export default function EventDetailsModal({
             Close
           </Button>
           {onEdit && <Button onClick={() => onEdit(event)}>Edit Event</Button>}
+          {event.status === "active" && event.granted_participants > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setBulkRevokeDialogOpen(true)}
+              className="text-orange-600 border-orange-600 hover:bg-orange-50"
+              disabled={bulkRevokeAccess.isPending}
+            >
+              <Users className="mr-2 h-4 w-4" />
+              Revoke All Access
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
+
+      <AlertDialog
+        open={bulkRevokeDialogOpen}
+        onOpenChange={setBulkRevokeDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke All Access</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to revoke access for all participants in
+              this event? This will remove {event?.granted_participants} users
+              from the voice channel and cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkRevokeAccess}
+              className="bg-orange-600 text-white hover:bg-orange-700"
+              disabled={bulkRevokeAccess.isPending}
+            >
+              {bulkRevokeAccess.isPending ? "Revoking..." : "Revoke All Access"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

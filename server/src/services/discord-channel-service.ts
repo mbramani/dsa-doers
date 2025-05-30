@@ -76,97 +76,123 @@ export class DiscordChannelService {
   async grantVoiceChannelAccess(
     guildId: string,
     channelId: string,
-    userId: string,
-    roleId?: string,
+    discordUserId: string,
+    eventRoleId?: string,
   ): Promise<boolean> {
     try {
-      if (!this.guild) {
-        logger.error("Guild not initialized");
-        return false;
-      }
-
-      const channel = (await this.guild.channels.fetch(
+      logger.info("Granting voice channel access", {
+        guildId,
         channelId,
-      )) as GuildChannel;
+        discordUserId,
+        eventRoleId,
+      });
 
-      if (!channel) {
-        logger.error("Channel not found", { channelId, guildId });
+      const guild = await this.client.guilds.fetch(guildId);
+      if (!guild) {
+        logger.error("Guild not found", { guildId });
         return false;
       }
 
-      if (
-        channel.type !== ChannelType.GuildVoice &&
-        channel.type !== ChannelType.GuildStageVoice
-      ) {
-        logger.error("Invalid channel type for voice access", {
-          channelId,
-          channelType: channel.type,
-          expectedTypes: [ChannelType.GuildVoice, ChannelType.GuildStageVoice],
+      // 1. First, check if user is in the guild
+      let member;
+      try {
+        member = await guild.members.fetch(discordUserId);
+      } catch (memberError) {
+        logger.error("User not found in guild", {
+          discordUserId,
+          guildId,
+          error: memberError,
         });
         return false;
       }
 
-      // Method 1: Grant direct channel permissions to user
-      await channel.permissionOverwrites.create(
-        userId,
-        {
-          ViewChannel: true,
-          Connect: true,
-          Speak: true,
-          Stream: false, // Allow screen sharing
-          UseVAD: false, // Voice activity detection
-        },
-        {
-          reason: "Event access granted - user has required tags",
-        },
-      );
+      if (!member) {
+        logger.error("User is not a member of the guild", {
+          discordUserId,
+          guildId,
+        });
+        return false;
+      }
 
-      // Method 2: If using role-based access, assign the role
-      if (roleId) {
+      // 2. Get the voice channel
+      const channel = await guild.channels.fetch(channelId);
+      if (!channel || !channel.isVoiceBased()) {
+        logger.error("Voice channel not found or invalid", {
+          channelId,
+          channelType: channel?.type,
+        });
+        return false;
+      }
+
+      // 3. Method 1: Use role-based access if eventRoleId is provided
+      if (eventRoleId) {
         try {
-          const member = await this.guild.members.fetch(userId);
-          const role = await this.guild.roles.fetch(roleId);
-
-          if (role && !member.roles.cache.has(roleId)) {
-            await member.roles.add(roleId, "Event access granted via role");
-            logger.info("Event role assigned to user", {
-              userId,
-              roleId,
+          const role = await guild.roles.fetch(eventRoleId);
+          if (role) {
+            await member.roles.add(role, `Event access granted`);
+            logger.info("Added event role to user", {
+              discordUserId,
+              roleId: eventRoleId,
               roleName: role.name,
-              channelId,
             });
+            return true;
           }
         } catch (roleError) {
           logger.warn(
-            "Failed to assign event role, but direct permissions granted",
+            "Failed to add role, falling back to direct permissions",
             {
-              userId,
-              roleId,
-              channelId,
+              eventRoleId,
               error: roleError,
             },
           );
         }
       }
 
-      logger.info("Voice channel access granted successfully", {
-        userId,
-        channelId,
-        channelName: channel.name,
-        roleId,
-        guildId,
-      });
+      // 4. Method 2: Direct channel permission overwrites
+      try {
+        await channel.permissionOverwrites.create(
+          member,
+          {
+            ViewChannel: true,
+            Connect: true,
+            Speak: true,
+            Stream: false,
+            UseVAD: true,
+          },
+          {
+            reason: `Event access granted`,
+            type: 1, // 1 = member, 0 = role
+          },
+        );
 
-      return true;
-    } catch (error) {
+        logger.info(
+          "Successfully granted voice channel access via permissions",
+          {
+            discordUserId,
+            channelId,
+            channelName: channel.name,
+          },
+        );
+
+        return true;
+      } catch (permError) {
+        logger.error("Failed to create permission overwrite", {
+          error: permError,
+          discordUserId,
+          channelId,
+          errorCode: (permError as any)?.code,
+          errorMessage: (permError as any)?.message,
+        });
+        return false;
+      }
+    } catch (error: any) {
       logger.error("Failed to grant voice channel access", {
         error,
-        userId,
+        userId: discordUserId,
         channelId,
-        roleId,
         guildId,
-        errorCode: (error as any)?.code,
-        errorMessage: (error as any)?.message,
+        errorCode: error?.code,
+        errorMessage: error?.message,
       });
       return false;
     }

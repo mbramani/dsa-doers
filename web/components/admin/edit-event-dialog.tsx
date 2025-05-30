@@ -10,7 +10,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { EventType, EventWithDetails, UpdateEventInput } from "@/types/events";
+import {
+  EventStatus,
+  EventType,
+  EventWithDetails,
+  UpdateEventInput,
+} from "@/types/events";
 import {
   Form,
   FormControl,
@@ -53,6 +58,9 @@ const editEventSchema = z.object({
   event_type: z.nativeEnum(EventType, {
     required_error: "Event type is required",
   }),
+  status: z.nativeEnum(EventStatus, {
+    required_error: "Status is required",
+  }),
   start_time: z.string().min(1, "Start time is required"),
   end_time: z.string().optional(),
   voice_channel_id: z.string().min(1, "Voice channel is required"),
@@ -83,6 +91,7 @@ export default function EditEventDialog({
       title: "",
       description: "",
       event_type: EventType.SESSION,
+      status: EventStatus.ACTIVE, // Add default status
       start_time: "",
       end_time: "",
       voice_channel_id: "",
@@ -108,6 +117,7 @@ export default function EditEventDialog({
         title: event.title,
         description: event.description || "",
         event_type: event.event_type,
+        status: event.status, // Add status to form reset
         start_time: formatDateTimeLocal(startTime),
         end_time: endTime ? formatDateTimeLocal(endTime) : "",
         voice_channel_id: event.voice_channel_id,
@@ -125,6 +135,7 @@ export default function EditEventDialog({
         title: data.title,
         description: data.description || undefined,
         event_type: data.event_type,
+        status: data.status, // Add status to update data
         start_time: new Date(data.start_time).toISOString(),
         end_time: data.end_time
           ? new Date(data.end_time).toISOString()
@@ -238,6 +249,39 @@ export default function EditEventDialog({
                       </SelectItem>
                       <SelectItem value={EventType.DISCUSSION}>
                         Discussion
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Status */}
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={updateEvent.isPending}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value={EventStatus.DRAFT}>Draft</SelectItem>
+                      <SelectItem value={EventStatus.ACTIVE}>Active</SelectItem>
+                      <SelectItem value={EventStatus.COMPLETED}>
+                        Completed
+                      </SelectItem>
+                      <SelectItem value={EventStatus.CANCELLED}>
+                        Cancelled
                       </SelectItem>
                     </SelectContent>
                   </Select>

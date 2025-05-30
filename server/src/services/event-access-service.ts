@@ -18,10 +18,10 @@ export interface EventAccessResult {
   success: boolean;
   message: string;
   data?: {
-    hasAccess?: boolean;
-    voiceChannelId?: string;
-    eventTitle?: string;
-    missingTags?: Array<{
+    has_access?: boolean;
+    voice_channel_id?: string;
+    event_title?: string;
+    missing_tags?: Array<{
       tag_id: string;
       name: string;
       display_name: string;
@@ -36,16 +36,16 @@ export interface EventAccessResult {
 }
 
 export interface EventEligibilityResult {
-  isEligible: boolean;
-  hasAllRequiredTags: boolean;
-  missingTags: Array<{
+  is_eligible: boolean;
+  has_all_required_tags: boolean;
+  missing_tags: Array<{
     tag_id: string;
     name: string;
     display_name: string;
     color: string;
     icon: string;
   }>;
-  userTags: Array<{
+  user_tags: Array<{
     tag_id: string;
     name: string;
     display_name: string;
@@ -100,7 +100,7 @@ export class EventAccessService {
       // Check if event has started (optional grace period)
       const now = new Date();
       const eventStartTime = new Date(event.start_time);
-      const gracePeriodMinutes = 30; // Allow joining 30 minutes before start
+      const gracePeriodMinutes = 30 * 10000; // Allow joining 30 minutes before start
       const graceStartTime = new Date(
         eventStartTime.getTime() - gracePeriodMinutes * 60 * 1000,
       );
@@ -133,9 +133,9 @@ export class EventAccessService {
           success: true,
           message: "You already have access to this event",
           data: {
-            hasAccess: true,
-            voiceChannelId: event.voice_channel_id,
-            eventTitle: event.title,
+            has_access: true,
+            voice_channel_id: event.voice_channel_id,
+            event_title: event.title,
           },
         };
       }
@@ -165,13 +165,13 @@ export class EventAccessService {
           success: false,
           message: `You're missing required tags to join this event: ${missingTagsText}. Earn these tags to gain access.`,
           data: {
-            missingTags: eligibility.missing_required_tags,
+            missing_tags: eligibility.missing_required_tags,
           },
           error: {
             code: "MISSING_REQUIRED_TAGS",
             details: {
-              missingTags: eligibility.missing_required_tags,
-              userTags: eligibility.user_tags,
+              missing_tags: eligibility.missing_required_tags,
+              user_tags: eligibility.user_tags,
             },
           },
         };
@@ -208,7 +208,7 @@ export class EventAccessService {
           eventId,
           userId,
           discordUserId: userDiscord.discord_id,
-          voiceChannelId: event.voice_channel_id,
+          voice_channel_id: event.voice_channel_id,
           operationId,
         });
 
@@ -220,7 +220,7 @@ export class EventAccessService {
             code: "DISCORD_ACCESS_FAILED",
             details: {
               discordUserId: userDiscord.discord_id,
-              voiceChannelId: event.voice_channel_id,
+              voice_channel_id: event.voice_channel_id,
             },
           },
         };
@@ -244,8 +244,8 @@ export class EventAccessService {
         logger.info("Event access granted successfully", {
           eventId,
           userId,
-          eventTitle: event.title,
-          voiceChannelId: event.voice_channel_id,
+          event_title: event.title,
+          voice_channel_id: event.voice_channel_id,
           operationId,
         });
 
@@ -253,9 +253,9 @@ export class EventAccessService {
           success: true,
           message: `Access granted! You can now join the voice channel for "${event.title}".`,
           data: {
-            hasAccess: true,
-            voiceChannelId: event.voice_channel_id,
-            eventTitle: event.title,
+            has_access: true,
+            voice_channel_id: event.voice_channel_id,
+            event_title: event.title,
           },
         };
       } catch (dbError) {
@@ -336,7 +336,7 @@ export class EventAccessService {
         return {
           success: true,
           message: "You do not have active access to this event",
-          data: { hasAccess: false },
+          data: { has_access: false },
         };
       }
 
@@ -370,7 +370,7 @@ export class EventAccessService {
       return {
         success: true,
         message: "Access revoked successfully",
-        data: { hasAccess: false },
+        data: { has_access: false },
       };
     } catch (error: any) {
       logger.error("Failed to revoke event access", {
@@ -485,7 +485,7 @@ export class EventAccessService {
 
       logger.info("Event cleanup completed", {
         eventId,
-        eventTitle: event.title,
+        event_title: event.title,
         usersRevoked,
         dbUsersRevoked,
         discordRoleDeleted,
@@ -533,10 +533,10 @@ export class EventAccessService {
       );
 
       return {
-        isEligible: eligibility.is_eligible,
-        hasAllRequiredTags: eligibility.has_all_required_tags,
-        missingTags: eligibility.missing_required_tags,
-        userTags: eligibility.user_tags,
+        is_eligible: eligibility.is_eligible,
+        has_all_required_tags: eligibility.has_all_required_tags,
+        missing_tags: eligibility.missing_required_tags,
+        user_tags: eligibility.user_tags,
       };
     } catch (error) {
       logger.error("Failed to check event eligibility", {
@@ -546,10 +546,10 @@ export class EventAccessService {
       });
 
       return {
-        isEligible: false,
-        hasAllRequiredTags: false,
-        missingTags: [],
-        userTags: [],
+        is_eligible: false,
+        has_all_required_tags: false,
+        missing_tags: [],
+        user_tags: [],
       };
     }
   }
@@ -561,7 +561,7 @@ export class EventAccessService {
     eventId: string,
     userId: string,
   ): Promise<{
-    hasAccess: boolean;
+    has_access: boolean;
     accessDetails: EventVoiceAccessEntity | null;
     eligibility: EventEligibilityResult;
   }> {
@@ -572,7 +572,7 @@ export class EventAccessService {
       ]);
 
       return {
-        hasAccess: accessDetails?.status === VoiceAccessStatus.ACTIVE,
+        has_access: accessDetails?.status === VoiceAccessStatus.ACTIVE,
         accessDetails,
         eligibility,
       };
@@ -584,13 +584,13 @@ export class EventAccessService {
       });
 
       return {
-        hasAccess: false,
+        has_access: false,
         accessDetails: null,
         eligibility: {
-          isEligible: false,
-          hasAllRequiredTags: false,
-          missingTags: [],
-          userTags: [],
+          is_eligible: false,
+          has_all_required_tags: false,
+          missing_tags: [],
+          user_tags: [],
         },
       };
     }
@@ -667,9 +667,9 @@ export class EventAccessService {
         success: true,
         message: "Access granted by admin",
         data: {
-          hasAccess: true,
-          voiceChannelId: event.voice_channel_id,
-          eventTitle: event.title,
+          has_access: true,
+          voice_channel_id: event.voice_channel_id,
+          event_title: event.title,
         },
       };
     } catch (error: any) {

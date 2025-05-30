@@ -231,7 +231,7 @@ export const useAdminTags = () => {
 };
 
 export const useAssignableTags = () => {
-  return useQuery({
+  return useQuery<{ data: { tags: Tag[] } }>({
     queryKey: ["admin", "tags", "assignable"],
     queryFn: adminApi.getAssignableTags,
     staleTime: 5 * 60 * 1000, // 5 minutes

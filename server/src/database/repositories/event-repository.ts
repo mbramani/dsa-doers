@@ -246,16 +246,11 @@ export class EventRepository {
   ): Promise<EventWithDetailsQuery | null> {
     try {
       const query = `
-        SELECT 
-          e.*,
-          u.username as creator_username,
-          u.avatar_url as creator_avatar_url,
-          COUNT(DISTINCT ep.id) as participant_count,
-          COUNT(DISTINCT ep_granted.id) as granted_participants,
-          COUNT(DISTINCT eva.id) as voice_access_count,
-          COALESCE(
+        WITH event_tags AS (
+          SELECT 
+            ert.event_id,
             json_agg(
-              DISTINCT jsonb_build_object(
+              jsonb_build_object(
                 'id', ert.id,
                 'tag_id', t.id,
                 'name', t.name,
@@ -264,18 +259,28 @@ export class EventRepository {
                 'icon', t.icon,
                 'category', t.category
               )
-            ) FILTER (WHERE t.id IS NOT NULL),
-            '[]'::json
-          ) as required_tags
+            ) as required_tags
+          FROM event_required_tags ert
+          JOIN tags t ON ert.tag_id = t.id
+          WHERE ert.event_id = $1 AND t.is_active = true
+          GROUP BY ert.event_id
+        )
+        SELECT 
+          e.*,
+          u.username as creator_username,
+          u.avatar_url as creator_avatar_url,
+          COUNT(DISTINCT ep.id) as participant_count,
+          COUNT(DISTINCT ep_granted.id) as granted_participants,
+          COUNT(DISTINCT eva.id) as voice_access_count,
+          COALESCE(et.required_tags, '[]'::json) as required_tags
         FROM events e
         LEFT JOIN users u ON e.created_by = u.id
         LEFT JOIN event_participants ep ON e.id = ep.event_id
         LEFT JOIN event_participants ep_granted ON e.id = ep_granted.event_id AND ep_granted.status = 'granted'
         LEFT JOIN event_voice_access eva ON e.id = eva.event_id AND eva.status = 'active'
-        LEFT JOIN event_required_tags ert ON e.id = ert.event_id
-        LEFT JOIN tags t ON ert.tag_id = t.id
+        LEFT JOIN event_tags et ON e.id = et.event_id
         WHERE e.id = $1
-        GROUP BY e.id, u.username, u.avatar_url
+        GROUP BY e.id, u.username, u.avatar_url, et.required_tags
       `;
 
       const result = await db.query(query, [id]);
@@ -436,51 +441,51 @@ export class EventRepository {
   ): Promise<UserEventEligibilityQuery> {
     try {
       const query = `
-        WITH required_tags AS (
-          SELECT t.id, t.name, t.display_name, t.color, t.icon
-          FROM event_required_tags ert
-          JOIN tags t ON ert.tag_id = t.id
-          WHERE ert.event_id = $1 AND t.is_active = true
-        ),
-        user_tags AS (
-          SELECT t.id, t.name, t.display_name, t.color, t.icon, ut.is_primary
-          FROM user_tags ut
-          JOIN tags t ON ut.tag_id = t.id
-          WHERE ut.user_id = $2 AND ut.is_active = true AND t.is_active = true
-        ),
-        missing_tags AS (
-          SELECT rt.id, rt.name, rt.display_name, rt.color, rt.icon
-          FROM required_tags rt
-          LEFT JOIN user_tags ut ON rt.id = ut.id
-          WHERE ut.id IS NULL
-        )
-        SELECT 
-          $2 as user_id,
-          $1 as event_id,
-          (SELECT COUNT(*) FROM missing_tags) = 0 as is_eligible,
-          (SELECT COUNT(*) FROM required_tags) = 0 OR (SELECT COUNT(*) FROM missing_tags) = 0 as has_all_required_tags,
-          COALESCE(
-            (SELECT json_agg(json_build_object(
-              'tag_id', id,
-              'name', name,
-              'display_name', display_name,
-              'color', color,
-              'icon', icon
-            )) FROM missing_tags),
-            '[]'::json
-          ) as missing_required_tags,
-          COALESCE(
-            (SELECT json_agg(json_build_object(
-              'tag_id', id,
-              'name', name,
-              'display_name', display_name,
-              'color', color,
-              'icon', icon,
-              'is_primary', is_primary
-            )) FROM user_tags),
-            '[]'::json
-          ) as user_tags
-      `;
+      WITH required_tags AS (
+        SELECT t.id, t.name, t.display_name, t.color, t.icon
+        FROM event_required_tags ert
+        JOIN tags t ON ert.tag_id = t.id
+        WHERE ert.event_id = $1 AND t.is_active = true
+      ),
+      user_tags AS (
+        SELECT t.id, t.name, t.display_name, t.color, t.icon, ut.is_primary
+        FROM user_tags ut
+        JOIN tags t ON ut.tag_id = t.id
+        WHERE ut.user_id = $2 AND ut.is_active = true AND t.is_active = true
+      ),
+      missing_tags AS (
+        SELECT rt.id, rt.name, rt.display_name, rt.color, rt.icon
+        FROM required_tags rt
+        LEFT JOIN user_tags ut ON rt.id = ut.id
+        WHERE ut.id IS NULL
+      )
+      SELECT 
+        $2 as user_id,
+        $1 as event_id,
+        (SELECT COUNT(*) FROM missing_tags) = 0 as is_eligible,
+        (SELECT COUNT(*) FROM required_tags) = 0 OR (SELECT COUNT(*) FROM missing_tags) = 0 as has_all_required_tags,
+        COALESCE(
+          (SELECT json_agg(json_build_object(
+            'tag_id', id,
+            'name', name,
+            'display_name', display_name,
+            'color', color,
+            'icon', icon
+          )) FROM missing_tags),
+          '[]'::json
+        ) as missing_required_tags,
+        COALESCE(
+          (SELECT json_agg(json_build_object(
+            'tag_id', id,
+            'name', name,
+            'display_name', display_name,
+            'color', color,
+            'icon', icon,
+            'is_primary', is_primary
+          )) FROM user_tags),
+          '[]'::json
+        ) as user_tags
+    `;
 
       const result = await db.query(query, [eventId, userId]);
       return result.rows[0];
@@ -514,6 +519,46 @@ export class EventRepository {
         eventId,
         userId,
       });
+      throw error;
+    }
+  }
+  async grantUserEventAccess(
+    eventId: string,
+    userId: string,
+  ): Promise<EventVoiceAccessEntity> {
+    try {
+      // Get Discord ID from discord_profiles table
+      const discordProfile = await this.getUserDiscordProfile(userId);
+
+      if (!discordProfile?.discord_id) {
+        throw new Error("User does not have a Discord profile linked");
+      }
+
+      // First revoke any existing access to avoid duplicates
+      await this.revokeEventAccess(eventId, userId);
+
+      const query = `
+        INSERT INTO event_voice_access (
+          event_id, user_id, discord_user_id, status, granted_by_system
+        )
+        VALUES ($1, $2, $3, 'active', true)
+        RETURNING *
+      `;
+
+      const result = await db.query(query, [
+        eventId,
+        userId,
+        discordProfile.discord_id,
+      ]);
+
+      logger.info("Event access granted", {
+        eventId,
+        userId,
+        discordUserId: discordProfile.discord_id,
+      });
+      return result.rows[0];
+    } catch (error) {
+      logger.error("Failed to grant event access", { error, eventId, userId });
       throw error;
     }
   }
@@ -690,41 +735,53 @@ export class EventRepository {
 
   async getEventParticipants(
     eventId: string,
+    page: number = 1,
+    limit: number = 20,
   ): Promise<EventParticipantWithUserQuery[]> {
     try {
-      const query = `
-        SELECT 
-          ep.*,
-          u.username,
-          u.avatar_url,
-          dp.discord_id,
-          COALESCE(
-            json_agg(
-              DISTINCT jsonb_build_object(
-                'tag_id', t.id,
-                'tag_name', t.name,
-                'tag_display_name', t.display_name,
-                'tag_color', t.color,
-                'tag_icon', t.icon,
-                'is_primary', ut.is_primary
-              )
-            ) FILTER (WHERE t.id IS NOT NULL),
-            '[]'::json
-          ) as user_tags
-        FROM event_participants ep
-        JOIN users u ON ep.user_id = u.id
-        LEFT JOIN discord_profiles dp ON u.id = dp.user_id
-        LEFT JOIN user_tags ut ON u.id = ut.user_id AND ut.is_active = true
-        LEFT JOIN tags t ON ut.tag_id = t.id AND t.is_active = true
-        WHERE ep.event_id = $1
-        GROUP BY ep.id, u.username, u.avatar_url, dp.discord_id
-        ORDER BY ep.requested_at DESC
-      `;
+      const offset = (page - 1) * limit;
 
-      const result = await db.query(query, [eventId]);
+      const query = `
+      SELECT 
+        ep.id,
+        ep.event_id,
+        ep.user_id,
+        ep.status,
+        ep.requested_at,
+        ep.processed_at,
+        ep.notes,
+        u.username,
+        u.avatar_url,
+        dp.discord_id
+      FROM event_participants ep
+      JOIN users u ON ep.user_id = u.id
+      LEFT JOIN discord_profiles dp ON u.id = dp.user_id
+      WHERE ep.event_id = $1
+      ORDER BY ep.requested_at DESC
+      LIMIT $2 OFFSET $3
+    `;
+
+      const result = await db.query(query, [eventId, limit, offset]);
       return result.rows;
     } catch (error) {
       logger.error("Failed to get event participants", { error, eventId });
+      throw error;
+    }
+  }
+
+  // Add this new method for getting total count:
+  async getEventParticipantCount(eventId: string): Promise<number> {
+    try {
+      const query = `
+        SELECT COUNT(*) as count
+        FROM event_participants
+        WHERE event_id = $1
+      `;
+
+      const result = await db.query(query, [eventId]);
+      return parseInt(result.rows[0].count);
+    } catch (error) {
+      logger.error("Failed to get event participant count", { error, eventId });
       throw error;
     }
   }
@@ -759,6 +816,69 @@ export class EventRepository {
       return result.rows;
     } catch (error) {
       logger.error("Failed to get tags by ids", { error, tagIds });
+      throw error;
+    }
+  }
+  async getUserEvents(userId: string): Promise<EventWithDetailsQuery[]> {
+    try {
+      const query = `
+      WITH user_event_data AS (
+        SELECT 
+          e.*,
+          u.username as creator_username,
+          u.avatar_url as creator_avatar_url,
+          COUNT(DISTINCT ep.id) as participant_count,
+          COUNT(DISTINCT ep_granted.id) as granted_participants,
+          COUNT(DISTINCT eva.id) as voice_access_count
+        FROM events e
+        LEFT JOIN users u ON e.created_by = u.id
+        LEFT JOIN event_participants ep ON e.id = ep.event_id
+        LEFT JOIN event_participants ep_granted ON e.id = ep_granted.event_id AND ep_granted.status = 'granted'
+        LEFT JOIN event_voice_access eva ON e.id = eva.event_id AND eva.status = 'active'
+        -- Join with user's event access to only show events they have access to
+        INNER JOIN event_voice_access user_access ON e.id = user_access.event_id 
+          AND user_access.user_id = $1 
+          AND user_access.status = 'active'
+        WHERE e.status IN ('active', 'completed')
+        GROUP BY e.id, u.username, u.avatar_url
+      ),
+      event_tags AS (
+        SELECT 
+          ert.event_id,
+          json_agg(
+            jsonb_build_object(
+              'id', ert.id,
+              'tag_id', t.id,
+              'name', t.name,
+              'display_name', t.display_name,
+              'color', t.color,
+              'icon', t.icon,
+              'category', t.category
+            )
+          ) as required_tags
+        FROM event_required_tags ert
+        JOIN tags t ON ert.tag_id = t.id
+        WHERE t.is_active = true
+        GROUP BY ert.event_id
+      )
+      SELECT 
+        ued.*,
+        COALESCE(et.required_tags, '[]'::json) as required_tags
+      FROM user_event_data ued
+      LEFT JOIN event_tags et ON ued.id = et.event_id
+      ORDER BY ued.start_time ASC
+    `;
+
+      const result = await db.query(query, [userId]);
+
+      return result.rows.map((row) => ({
+        ...row,
+        participant_count: parseInt(row.participant_count),
+        granted_participants: parseInt(row.granted_participants),
+        voice_access_count: parseInt(row.voice_access_count),
+      }));
+    } catch (error) {
+      logger.error("Failed to get user events", { error, userId });
       throw error;
     }
   }

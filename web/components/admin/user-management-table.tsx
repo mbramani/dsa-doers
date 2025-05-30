@@ -15,6 +15,14 @@ import { AuthUser, UserRole } from "@/types/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -25,6 +33,7 @@ import {
   RefreshCw,
   Search,
   Shield,
+  Tags,
   Trash2,
   UserPlus,
   Users,
@@ -48,6 +57,8 @@ import { format, formatDistanceToNow } from "date-fns";
 import { getRoleBadgeVariant, getRoleDisplayName } from "@/lib/role-utils";
 import {
   useAdminUsers,
+  useAssignTag,
+  useAssignableTags,
   useDeleteUser,
   useSyncDiscord,
   useUpdateUserRole,
@@ -69,6 +80,13 @@ export default function UserManagementTable() {
     role: UserRole;
   } | null>(null);
 
+  // Add these new state variables
+  const [assignTagDialog, setAssignTagDialog] = useState<{
+    open: boolean;
+    user: AuthUser | null;
+  }>({ open: false, user: null });
+  const [selectedTagId, setSelectedTagId] = useState<string>("");
+
   const { data, isLoading, error, refetch, isRefetching } = useAdminUsers(
     page,
     20,
@@ -77,6 +95,11 @@ export default function UserManagementTable() {
   const updateRole = useUpdateUserRole();
   const deleteUser = useDeleteUser();
   const syncDiscord = useSyncDiscord();
+
+  // Add these new hooks
+  const assignTag = useAssignTag();
+  const { data: assignableTagsData } = useAssignableTags();
+  const assignableTags = assignableTagsData?.data?.tags || [];
 
   const handleRoleUpdate = async () => {
     if (!selectedRole) return;
@@ -106,6 +129,34 @@ export default function UserManagementTable() {
     } catch (error: any) {
       toast.error(error.message || "Failed to sync Discord roles.");
     }
+  };
+
+  // Add new tag assignment handler
+  const handleAssignTag = async () => {
+    if (!assignTagDialog.user || !selectedTagId) return;
+
+    try {
+      await assignTag.mutateAsync({
+        user_id: assignTagDialog.user.id,
+        tag_id: selectedTagId,
+        is_primary: false,
+        notes: "Assigned via admin panel",
+      });
+
+      toast.success(
+        `Tag assigned to ${assignTagDialog.user.username} successfully!`,
+      );
+      setAssignTagDialog({ open: false, user: null });
+      setSelectedTagId("");
+      refetch(); // Refresh user data
+    } catch (error: any) {
+      toast.error(error.message || "Failed to assign tag");
+    }
+  };
+
+  const openAssignTagDialog = (user: AuthUser) => {
+    setAssignTagDialog({ open: true, user });
+    setSelectedTagId("");
   };
 
   if (error) {
@@ -345,6 +396,14 @@ export default function UserManagementTable() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          {/* Add tag assignment option */}
+                          <DropdownMenuItem
+                            onClick={() => openAssignTagDialog(user)}
+                          >
+                            <Tags className="mr-2 h-4 w-4" />
+                            Assign Tag
+                          </DropdownMenuItem>
+
                           {user.discordProfile && (
                             <DropdownMenuItem
                               onClick={() =>
@@ -358,8 +417,6 @@ export default function UserManagementTable() {
                           )}
                           <DropdownMenuItem
                             onClick={() => {
-                              // Navigate to user details page or open user details modal
-                              // You can implement this based on your routing structure
                               console.log("View user details:", user.id);
                             }}
                           >
@@ -523,6 +580,102 @@ export default function UserManagementTable() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Add Tag Assignment Dialog */}
+        <Dialog
+          open={assignTagDialog.open}
+          onOpenChange={(open) => {
+            if (!open) {
+              setAssignTagDialog({ open: false, user: null });
+              setSelectedTagId("");
+            }
+          }}
+        >
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Assign Tag</DialogTitle>
+              <DialogDescription>
+                Assign a tag to{" "}
+                <strong>{assignTagDialog.user?.username}</strong>. This will
+                also apply the corresponding Discord role.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Select Tag</label>
+                <Select value={selectedTagId} onValueChange={setSelectedTagId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a tag to assign..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {assignableTags
+                      .filter((tag) => tag.is_active && tag.is_assignable)
+                      .map((tag) => (
+                        <SelectItem key={tag.id} value={tag.id}>
+                          <div className="flex items-center gap-2">
+                            <span>{tag.icon}</span>
+                            <span>{tag.display_name}</span>
+                            <Badge
+                              variant="outline"
+                              style={{
+                                borderColor: tag.color,
+                                color: tag.color,
+                              }}
+                              className="text-xs"
+                            >
+                              {tag.category}
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Show current user tags */}
+              {assignTagDialog.user?.tags &&
+                assignTagDialog.user.tags.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Current Tags</label>
+                    <div className="flex flex-wrap gap-1">
+                      {assignTagDialog.user.tags.map((userTag) => (
+                        <Badge
+                          key={userTag.id}
+                          variant={userTag.is_primary ? "default" : "secondary"}
+                          className="text-xs"
+                        >
+                          {userTag.tag?.display_name || "Unknown Tag"}
+                          {userTag.is_primary && " (Primary)"}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setAssignTagDialog({ open: false, user: null });
+                  setSelectedTagId("");
+                }}
+                disabled={assignTag.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleAssignTag}
+                disabled={!selectedTagId || assignTag.isPending}
+              >
+                {assignTag.isPending ? "Assigning..." : "Assign Tag"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

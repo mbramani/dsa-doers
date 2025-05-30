@@ -6,6 +6,7 @@ import {
   EventFilters,
   EventListQuery,
   EventPaginationQuery,
+  EventParticipantWithUserQuery,
   EventStatus,
   EventType,
   EventWithDetailsQuery,
@@ -22,6 +23,16 @@ import { rateLimit } from "express-rate-limit";
 
 const router = Router();
 const logger = createLogger("events");
+
+interface EventParticipantsResponse {
+  participants: EventParticipantWithUserQuery[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
 
 // Rate limiting for access requests
 const accessRequestRateLimit = rateLimit({
@@ -362,6 +373,40 @@ router.get("/", async (req: AuthRequest, res: Response) => {
   }
 });
 
+// GET /api/events/my-events - Get user's events (events they have access to)
+router.get(
+  "/my-events",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.user!.userId;
+
+      // Get events where user has active access
+      const userEvents = await eventRepository.getUserEvents(userId);
+
+      const response: ApiResponse<EventWithDetailsQuery[]> = {
+        status: "success",
+        message: "User events retrieved successfully",
+        data: userEvents,
+      };
+
+      res.json(response);
+    } catch (error) {
+      logger.error("Failed to fetch user events", {
+        error,
+        userId: req.user?.userId,
+      });
+
+      const response: ApiResponse = {
+        status: "error",
+        message: "Failed to fetch your events",
+      };
+
+      res.status(500).json(response);
+    }
+  },
+);
+
 // GET /api/events/:id - Get event details with participants
 router.get("/:id", async (req: AuthRequest, res: Response) => {
   try {
@@ -423,6 +468,85 @@ router.get("/:id", async (req: AuthRequest, res: Response) => {
     res.status(500).json(response);
   }
 });
+
+// GET /api/events/:id/participants - Get event participants with pagination
+router.get(
+  "/:id/participants",
+  authenticateToken,
+  requireRole([UserRole.ADMIN, UserRole.MODERATOR]),
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const eventId = req.params.id;
+      const userId = req.user?.userId;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+
+      if (!eventId || typeof eventId !== "string") {
+        const response: ApiResponse = {
+          status: "error",
+          message: "Invalid event ID",
+        };
+        return res.status(400).json(response);
+      }
+
+      // Check if event exists and user has permission
+      const event = await eventRepository.getEventById(eventId, userId);
+      if (!event) {
+        const response: ApiResponse = {
+          status: "error",
+          message: "Event not found",
+        };
+        return res.status(404).json(response);
+      }
+
+      // Check if user is authorized to view participants
+      const isAdminOrModerator =
+        req.user?.role === "admin" || req.user?.role === "moderator";
+      if (!isAdminOrModerator && event.created_by !== userId) {
+        const response: ApiResponse = {
+          status: "error",
+          message: "Not authorized to view participants",
+        };
+        return res.status(403).json(response);
+      }
+
+      // Get paginated participants
+      const participants = await eventRepository.getEventParticipants(
+        eventId,
+        page,
+        limit,
+      );
+      const totalParticipants =
+        await eventRepository.getEventParticipantCount(eventId);
+
+      const response: ApiResponse<EventParticipantsResponse> = {
+        status: "success",
+        message: "Event participants retrieved successfully",
+        data: {
+          participants,
+          pagination: {
+            page,
+            limit,
+            total: totalParticipants,
+            totalPages: Math.ceil(totalParticipants / limit),
+          },
+        },
+      };
+
+      res.json(response);
+    } catch (error) {
+      logger.error("Failed to get event participants", {
+        error,
+        eventId: req.params.id,
+      });
+      const response: ApiResponse = {
+        status: "error",
+        message: "Failed to get event participants",
+      };
+      res.status(500).json(response);
+    }
+  },
+);
 
 // PUT /api/events/:id - Update event (admin/moderator only)
 router.put(

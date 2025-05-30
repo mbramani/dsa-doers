@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Search,
   Trash2,
+  Users,
   X,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,6 +48,7 @@ import {
 } from "@/components/ui/table";
 import {
   useAdminEvents,
+  useBulkRevokeAccess,
   useDeleteEvent,
   useEndEvent,
 } from "@/hooks/admin-events";
@@ -79,6 +81,9 @@ export default function EventManagementTable() {
   const [selectedEvent, setSelectedEvent] = useState<EventWithDetails | null>(
     null,
   );
+  const [bulkRevokeDialogOpen, setBulkRevokeDialogOpen] = useState(false);
+  const [eventForBulkRevoke, setEventForBulkRevoke] =
+    useState<EventWithDetails | null>(null);
 
   const { data, isLoading, error, refetch, isRefetching } = useAdminEvents(
     page,
@@ -87,6 +92,7 @@ export default function EventManagementTable() {
   );
   const deleteEvent = useDeleteEvent();
   const endEvent = useEndEvent();
+  const bulkRevokeAccess = useBulkRevokeAccess();
 
   const handleDeleteEvent = async (event: EventWithDetails) => {
     try {
@@ -138,6 +144,42 @@ export default function EventManagementTable() {
     setFilters({});
     setSearch("");
     setPage(1);
+  };
+
+  const handleBulkRevokeAccess = async (event: EventWithDetails) => {
+    try {
+      // Get all users with granted access
+      const participants = await fetch(
+        `/api/events/${event.id}/participants?limit=1000`,
+      )
+        .then((res) => res.json())
+        .then((data) => data.data?.participants || []);
+
+      const grantedUserIds = participants
+        .filter((p: any) => p.status === "granted")
+        .map((p: any) => p.user_id);
+
+      if (grantedUserIds.length === 0) {
+        toast.info("No users have access to revoke");
+        return;
+      }
+
+      await bulkRevokeAccess.mutateAsync({
+        eventId: event.id,
+        userIds: grantedUserIds,
+        reason: "admin_bulk_revoke",
+      });
+
+      setBulkRevokeDialogOpen(false);
+      setEventForBulkRevoke(null);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to revoke access for all users");
+    }
+  };
+
+  const handleBulkRevokeConfirm = (event: EventWithDetails) => {
+    setEventForBulkRevoke(event);
+    setBulkRevokeDialogOpen(true);
   };
 
   if (error) {
@@ -345,13 +387,25 @@ export default function EventManagementTable() {
                             Edit Event
                           </DropdownMenuItem>
                           {event.status === EventStatus.ACTIVE && (
-                            <DropdownMenuItem
-                              onClick={() => handleEndEvent(event)}
-                              disabled={endEvent.isPending}
-                            >
-                              <X className="mr-2 h-4 w-4" />
-                              End Event
-                            </DropdownMenuItem>
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => handleEndEvent(event)}
+                                disabled={endEvent.isPending}
+                              >
+                                <X className="mr-2 h-4 w-4" />
+                                End Event
+                              </DropdownMenuItem>
+                              {event.granted_participants > 0 && (
+                                <DropdownMenuItem
+                                  onClick={() => handleBulkRevokeConfirm(event)}
+                                  className="text-orange-600"
+                                  disabled={bulkRevokeAccess.isPending}
+                                >
+                                  <Users className="mr-2 h-4 w-4" />
+                                  Revoke All Access
+                                </DropdownMenuItem>
+                              )}
+                            </>
                           )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -472,6 +526,39 @@ export default function EventManagementTable() {
                 disabled={deleteEvent.isPending}
               >
                 {deleteEvent.isPending ? "Deleting..." : "Delete Event"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Bulk Revoke Confirmation Dialog */}
+        <AlertDialog
+          open={bulkRevokeDialogOpen}
+          onOpenChange={setBulkRevokeDialogOpen}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Revoke All Access</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to revoke access for all participants in{" "}
+                <strong>{eventForBulkRevoke?.title}</strong>? This will remove{" "}
+                {eventForBulkRevoke?.granted_participants} users from the voice
+                channel and cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() =>
+                  eventForBulkRevoke &&
+                  handleBulkRevokeAccess(eventForBulkRevoke)
+                }
+                className="bg-orange-600 text-white hover:bg-orange-700"
+                disabled={bulkRevokeAccess.isPending}
+              >
+                {bulkRevokeAccess.isPending
+                  ? "Revoking..."
+                  : "Revoke All Access"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

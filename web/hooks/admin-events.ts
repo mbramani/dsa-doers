@@ -414,6 +414,61 @@ export function useBulkManageParticipants() {
   });
 }
 
+// Bulk revoke access
+export function useBulkRevokeAccess() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      eventId,
+      userIds,
+      reason,
+    }: {
+      eventId: string;
+      userIds: string[];
+      reason?: string;
+    }): Promise<ApiResponse<{ processed: number; failed: number }>> => {
+      try {
+        const response = await apiClient.post(
+          `/events/${eventId}/bulk-manage`,
+          {
+            action: "revoke",
+            userIds,
+            reason: reason || "admin_bulk_revoke",
+          },
+        );
+        return response.data;
+      } catch (error: any) {
+        console.error("Failed to bulk revoke access:", error);
+        throw new Error(
+          error.response?.data?.message || "Failed to revoke access for users",
+        );
+      }
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["event-participants", variables.eventId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["admin-event", variables.eventId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["admin-events"] });
+
+      const { processed, failed } = data.data || { processed: 0, failed: 0 };
+      if (failed > 0) {
+        toast.warning(
+          `Revoked access for ${processed} users, ${failed} failed`,
+        );
+      } else {
+        toast.success(`Successfully revoked access for ${processed} users`);
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}
+
 // Fetch Discord channels for selection
 export function useDiscordChannels() {
   return useQuery({

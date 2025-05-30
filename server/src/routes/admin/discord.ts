@@ -17,7 +17,7 @@ router.use(authenticateToken);
 router.get(
   "/channels",
   authenticateToken,
-  requireRole([UserRole.ADMIN]),
+  requireRole([UserRole.ADMIN, UserRole.MODERATOR]),
   async (req, res) => {
     try {
       const channels = await discordChannelService.getVoiceChannels();

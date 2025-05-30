@@ -243,7 +243,7 @@ export default function EventDetailsPage() {
                 <CardTitle>Join Event</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {eligibility && (
+                {eligibility?.is_eligible && (
                   <RequestAccessButton
                     eventId={eventId}
                     eligibility={eligibility}
