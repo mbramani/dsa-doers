@@ -4,16 +4,27 @@ import {
   ActivityStats,
 } from "../types/activity";
 
-import { PrismaClient } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { ServiceResult } from "../types/service";
 import { logger } from "../utils/logger";
+import { prisma } from "./database.service";
+
+export type ActivityLogWithActor = Prisma.ActivityLogGetPayload<{
+  include: {
+    actor: {
+      select: {
+        id: true;
+        discordUsername: true;
+        discordAvatar: true;
+      };
+    };
+  };
+}>;
 
 export class ActivityService {
-  private prisma = new PrismaClient();
-
   public async logActivity(data: ActivityLogData): Promise<boolean> {
     try {
-      await this.prisma.activityLog.create({
+      await prisma.activityLog.create({
         data: {
           actorId: data.actorId || null,
           actorType: data.actorType || "USER",
@@ -42,7 +53,7 @@ export class ActivityService {
 
   public async getActivityLogs(
     filters: ActivityLogFilters,
-  ): Promise<ServiceResult<any[]>> {
+  ): Promise<ServiceResult<ActivityLogWithActor[]>> {
     try {
       const where: any = {};
 
@@ -56,7 +67,7 @@ export class ActivityService {
         if (filters.endDate) where.createdAt.lte = filters.endDate;
       }
 
-      const logs = await this.prisma.activityLog.findMany({
+      const logs = await prisma.activityLog.findMany({
         where,
         include: {
           actor: {
@@ -108,7 +119,7 @@ export class ActivityService {
           break;
       }
 
-      const activityCounts = await this.prisma.activityLog.groupBy({
+      const activityCounts = await prisma.activityLog.groupBy({
         by: ["actionType"],
         where: {
           createdAt: {

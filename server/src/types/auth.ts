@@ -1,3 +1,5 @@
+import { Role, User, UserRole } from "@prisma/client";
+
 export interface DiscordUser {
   id: string;
   username: string;
@@ -30,20 +32,25 @@ export interface AuthResult {
   token: string;
 }
 
-export interface UserWithRoles {
-  id: string;
-  discordId: string;
-  discordUsername: string;
-  discordDiscriminator?: string;
-  discordAvatar?: string;
-  email?: string;
-  userRoles: Array<{
-    role: {
-      id: string;
-      name: string;
-      color?: string;
-    };
-    grantedAt: Date;
-    isSystemGranted: boolean;
-  }>;
+export type UserWithRoles = User & {
+  userRoles: (UserRole & {
+    role: Role;
+  })[];
+};
+
+export interface CreateUserResult {
+  user: UserWithRoles;
+  isNewUser: boolean;
+}
+
+export interface TokenStoreResult {
+  success: boolean;
+  error?: string;
+}
+
+export interface DiscordServiceResult<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  statusCode?: number;
 }

@@ -7,6 +7,7 @@ import cors from "cors";
 import { db } from "./services/database.service";
 import express from "express";
 import helmet from "helmet";
+import { roleRoutes } from "./routes/role.routes";
 import { serverConfig } from "./utils/config";
 
 interface ApiResponse<T = any> {
@@ -33,6 +34,7 @@ app.use(httpLogger);
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/roles", roleRoutes);
 
 // Health check
 app.get("/health", async (req, res) => {

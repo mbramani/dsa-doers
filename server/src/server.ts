@@ -10,7 +10,6 @@ const startServer = async () => {
     // Connect to database
     logger.info("📊 Connecting to database...");
     await db.connect();
-    logger.info("✅ Database connected successfully");
 
     // Start server
     logger.info(`🚀 Starting HTTP server on port ${serverConfig.port}...`);

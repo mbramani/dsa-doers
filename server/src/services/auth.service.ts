@@ -1,27 +1,23 @@
+import { ActivityService, activityService } from "./activity.service";
 import {
   AuthResult,
+  CreateUserResult,
   DiscordTokenResponse,
   DiscordUser,
   JWTPayload,
+  TokenStoreResult,
   UserWithRoles,
 } from "../types/auth";
-import {
-  CreateUserResult,
-  ServiceResult,
-  TokenStoreResult,
-} from "../types/service";
-import { discordConfig, jwtConfig } from "../utils/config";
-import jwt, { JwtPayload, SignOptions } from "jsonwebtoken";
+import jwt, { SignOptions } from "jsonwebtoken";
 
-import { ActivityService } from "./activity.service";
-import { PrismaClient } from "@prisma/client";
+import { ServiceResult } from "../types/service";
 import { discordService } from "./discord.service";
+import { jwtConfig } from "../utils/config";
 import { logger } from "../utils/logger";
+import { prisma } from "./database.service";
+import { roleService } from "./role.service";
 
 export class AuthService {
-  private prisma = new PrismaClient();
-  private activityService = new ActivityService();
-
   public getDiscordAuthUrl(): string {
     return discordService.getAuthUrl();
   }
@@ -127,7 +123,18 @@ export class AuthService {
       }
 
       // Sync Discord roles with platform roles
-      await discordService.syncUserRoles(user.id);
+      const userPlatformRoles = user.userRoles.map((ur) => ur.role.name);
+      const syncResult = await discordService.syncUserRoles(
+        discordUser.id,
+        userPlatformRoles,
+      );
+      if (!syncResult.success) {
+        logger.warn("Failed to sync user roles with Discord", {
+          userId: user.id,
+          discordId: user.discordId,
+          error: syncResult.error,
+        });
+      }
 
       // Generate JWT token
       const token = this.generateJWT({
@@ -164,7 +171,7 @@ export class AuthService {
     discordUser: DiscordUser,
   ): Promise<ServiceResult<CreateUserResult>> {
     try {
-      const existingUser = await this.prisma.user.findUnique({
+      const existingUser = await prisma.user.findUnique({
         where: { discordId: discordUser.id },
         include: {
           userRoles: {
@@ -176,7 +183,7 @@ export class AuthService {
 
       if (existingUser) {
         // Update existing user
-        const updatedUser = await this.prisma.user.update({
+        const updatedUser = await prisma.user.update({
           where: { id: existingUser.id },
           data: {
             discordUsername: discordUser.username,
@@ -198,7 +205,7 @@ export class AuthService {
         };
       } else {
         // Create new user
-        const newUser = await this.prisma.user.create({
+        const newUser = await prisma.user.create({
           data: {
             discordId: discordUser.id,
             discordUsername: discordUser.username,
@@ -214,8 +221,30 @@ export class AuthService {
           },
         });
 
+        // Automatically assign NEWBIE role to new users
+        const newbieAssignResult = await roleService.assignNewbieRole(
+          newUser.id,
+        );
+        if (!newbieAssignResult.success) {
+          logger.warn(
+            "Failed to assign NEWBIE role to new user:",
+            newbieAssignResult.error,
+          );
+        }
+
+        // Refresh user data to include the new role
+        const userWithRoles = await prisma.user.findUnique({
+          where: { id: newUser.id },
+          include: {
+            userRoles: {
+              include: { role: true },
+              where: { revokedAt: null },
+            },
+          },
+        });
+
         // Log new user creation
-        await this.activityService.logActivity({
+        await activityService.logActivity({
           actorType: "SYSTEM",
           actionType: "USER_CREATED",
           entityType: "USER",
@@ -224,12 +253,13 @@ export class AuthService {
             discordId: discordUser.id,
             discordUsername: discordUser.username,
             email: discordUser.email,
+            newbieRoleAssigned: newbieAssignResult.success,
           },
         });
 
         return {
           success: true,
-          data: { user: newUser, isNewUser: true },
+          data: { user: userWithRoles || newUser, isNewUser: true },
         };
       }
     } catch (error) {
@@ -255,7 +285,7 @@ export class AuthService {
     try {
       const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
 
-      await this.prisma.oAuthToken.upsert({
+      await prisma.oAuthToken.upsert({
         where: {
           userId_provider: {
             userId,
@@ -296,7 +326,7 @@ export class AuthService {
     userId: string,
   ): Promise<ServiceResult<UserWithRoles>> {
     try {
-      const user = await this.prisma.user.findUnique({
+      const user = await prisma.user.findUnique({
         where: { id: userId },
         include: {
           userRoles: {

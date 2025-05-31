@@ -274,8 +274,6 @@ export class AuthController {
         httpOnly: true,
         secure: serverConfig.nodeEnv === "production",
         sameSite: serverConfig.nodeEnv === "production" ? "none" : "lax",
-        domain:
-          serverConfig.nodeEnv === "production" ? ".yourdomain.com" : undefined,
       });
 
       const response: ApiResponse = {
@@ -348,9 +346,7 @@ export class AuthController {
         httpOnly: true,
         secure: serverConfig.nodeEnv === "production",
         sameSite: serverConfig.nodeEnv === "production" ? "none" : "lax",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        domain:
-          serverConfig.nodeEnv === "production" ? ".yourdomain.com" : undefined,
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });
 
       // Log token refresh

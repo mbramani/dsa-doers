@@ -2,7 +2,8 @@ import { authenticateToken, requireRoles } from "../middleware/auth.middleware";
 
 import { AuthController } from "../controllers/auth.controller";
 import { Router } from "express";
-import { validateDiscordCallback } from "../middleware/validation.middleware";
+import { discordCallbackSchema } from "../schemas/auth.validation";
+import { validateRequest } from "../middleware/validation.middleware";
 
 const router = Router();
 const authController = new AuthController();
@@ -11,13 +12,13 @@ const authController = new AuthController();
 router.get("/discord", authController.initiateDiscordOAuth);
 router.get(
   "/discord/callback",
-  validateDiscordCallback,
+  validateRequest(discordCallbackSchema),
   authController.handleDiscordCallback,
 );
 
 // Protected routes
-router.post("/logout", authController.logout);
 router.get("/me", authenticateToken, authController.getCurrentUser);
+router.post("/logout", authController.logout);
 router.post("/refresh", authController.refreshToken);
 
 // Admin only routes

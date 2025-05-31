@@ -52,6 +52,21 @@ const createLogger = (): winston.Logger => {
       environment: NODE_ENV,
     } as CustomLoggerMeta,
     transports: [
+      new winston.transports.Console({
+        format: winston.format.combine(
+          winston.format.colorize(),
+          winston.format.timestamp({ format: TIMESTAMP_FORMAT }),
+          winston.format.printf(
+            ({ timestamp, level, message, service, environment, ...meta }) => {
+              const metaString =
+                Object.keys(meta).length > 0
+                  ? `\n${JSON.stringify(meta, null, 2)}`
+                  : "";
+              return `${timestamp} [${service}:${environment}] ${level}: ${message}${metaString}`;
+            },
+          ),
+        ),
+      }),
       new winston.transports.File({
         filename: path.join(logsDir, "error.log"),
         level: "error",
@@ -90,38 +105,18 @@ const createLogger = (): winston.Logger => {
 
 export const logger = createLogger();
 
-// Console transport for non-production environments
-if (!IS_PRODUCTION) {
-  logger.add(
-    new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.timestamp({ format: TIMESTAMP_FORMAT }),
-        winston.format.printf(
-          ({ timestamp, level, message, service, environment, ...meta }) => {
-            const metaString =
-              Object.keys(meta).length > 0
-                ? `\n${JSON.stringify(meta, null, 2)}`
-                : "";
-            return `${timestamp} [${service}:${environment}] ${level}: ${message}${metaString}`;
-          },
-        ),
-      ),
-    }),
-  );
-}
 
 // Morgan HTTP logger middleware with better configuration
 const createMorganFormat = (): string => {
   return IS_PRODUCTION
     ? "combined"
-    : ":method :url :status :res[content-length] - :response-time ms [:date[clf]]";
+    : ":method :url :status :res[content-length] - :response-time ms [:date[iso]]";
 };
 
 export const httpLogger = morgan(createMorganFormat(), {
   stream: {
     write: (message: string): void => {
-      logger.info(message.trim(), { type: "http" });
+      logger.info(message.trim());
     },
   },
   skip: (req): boolean => {

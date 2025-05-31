@@ -37,6 +37,9 @@ importers:
       prisma:
         specifier: ^6.9.0
         version: 6.9.0(typescript@5.8.3)
+      prompts:
+        specifier: ^2.4.2
+        version: 2.4.2
       winston:
         specifier: ^3.17.0
         version: 3.17.0
@@ -62,6 +65,9 @@ importers:
       "@types/node":
         specifier: ^22.15.29
         version: 22.15.29
+      "@types/prompts":
+        specifier: ^2.4.9
+        version: 2.4.9
       nodemon:
         specifier: ^3.1.10
         version: 3.1.10
@@ -329,6 +335,12 @@ packages:
     resolution:
       {
         integrity: sha512-LNdjOkUDlU1RZb8e1kOIUpN1qQUlzGkEtbVNo53vbrwDg5om6oduhm4SiUaPW5ASTXhAiP0jInWG8Qx9fVlOeQ==,
+      }
+
+  "@types/prompts@2.4.9":
+    resolution:
+      {
+        integrity: sha512-qTxFi6Buiu8+50/+3DGIWLHM6QuWsEKugJnnP6iv2Mc4ncxE4A/OJkjuVOA+5X0X1S/nq5VJRa8Lu+nwcvbrKA==,
       }
 
   "@types/qs@6.14.0":
@@ -937,6 +949,13 @@ packages:
         integrity: sha512-YHlZCB6lMTllWDtSPHz/ZXTsi8S00usEV6v1tjq8tOUZzw7DpSDWVXjXDre6ed1w/pd495ODpHZYSdkRTsa0HA==,
       }
 
+  kleur@3.0.3:
+    resolution:
+      {
+        integrity: sha512-eTIzlVOSUR+JxdDFepEYcBMtZ9Qqdef+rnzWdRZuMbOywu5tO2w2N7rqjoANZ5k9vywhL6Br1VRjUIgTQx4E8w==,
+      }
+    engines: { node: ">=6" }
+
   kuler@2.0.0:
     resolution:
       {
@@ -1179,6 +1198,13 @@ packages:
       typescript:
         optional: true
 
+  prompts@2.4.2:
+    resolution:
+      {
+        integrity: sha512-NxNv/kLguCA7p3jE8oL2aEBsrJWgAakBpgmgK6lpPWV+WuOmY6r2/zbAVnP+T8bQlA0nzHXSJSJW0Hq7ylaD2Q==,
+      }
+    engines: { node: ">= 6" }
+
   proxy-addr@2.0.7:
     resolution:
       {
@@ -1327,6 +1353,12 @@ packages:
         integrity: sha512-a2B9Y0KlNXl9u/vsW6sTIu9vGEpfKu2wRV6l1H3XEas/0gUIzGzBoP/IouTcUQbm9JWZLH3COxyn03TYlFax6w==,
       }
     engines: { node: ">=10" }
+
+  sisteransi@1.0.5:
+    resolution:
+      {
+        integrity: sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==,
+      }
 
   stack-trace@0.0.10:
     resolution:
@@ -1690,6 +1722,11 @@ snapshots:
   "@types/node@22.15.29":
     dependencies:
       undici-types: 6.21.0
+
+  "@types/prompts@2.4.9":
+    dependencies:
+      "@types/node": 22.15.29
+      kleur: 3.0.3
 
   "@types/qs@6.14.0": {}
 
@@ -2063,6 +2100,8 @@ snapshots:
       jwa: 1.4.2
       safe-buffer: 5.2.1
 
+  kleur@3.0.3: {}
+
   kuler@2.0.0: {}
 
   lodash.includes@4.3.0: {}
@@ -2178,6 +2217,11 @@ snapshots:
     optionalDependencies:
       typescript: 5.8.3
 
+  prompts@2.4.2:
+    dependencies:
+      kleur: 3.0.3
+      sisteransi: 1.0.5
+
   proxy-addr@2.0.7:
     dependencies:
       forwarded: 0.2.0
@@ -2290,6 +2334,8 @@ snapshots:
   simple-update-notifier@2.0.0:
     dependencies:
       semver: 7.7.2
+
+  sisteransi@1.0.5: {}
 
   stack-trace@0.0.10: {}
 
