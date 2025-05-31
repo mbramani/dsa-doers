@@ -22,6 +22,7 @@ export const serverConfig = {
   nodeEnv: config.NODE_ENV,
   logLevel: config.LOG_LEVEL,
   corsOrigin: config.CORS_ORIGIN,
+  frontendUrl: config.FRONTEND_URL,
 } as const;
 
 export const databaseConfig = {

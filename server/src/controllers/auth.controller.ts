@@ -122,9 +122,8 @@ export class AuthController {
       });
 
       // Redirect to dashboard
-      const redirectUrl = new URL(
-        process.env.FRONTEND_URL || "http://localhost:3001/dashboard",
-      );
+      const redirectUrl = new URL(`${serverConfig.frontendUrl}/dashboard`);
+      
       if (isNewUser) {
         redirectUrl.searchParams.set("newUser", "true");
       }
@@ -148,7 +147,7 @@ export class AuthController {
       });
 
       const errorUrl = new URL(
-        `${process.env.FRONTEND_URL || "http://localhost:3001"}/auth/error`,
+        `${serverConfig.frontendUrl}/auth/error`,
       );
       errorUrl.searchParams.set(
         "message",

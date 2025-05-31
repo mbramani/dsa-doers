@@ -46,7 +46,12 @@ const envSchema = z.object({
   CORS_ORIGIN: z
     .string()
     .url("CORS_ORIGIN must be a valid URL")
-    .default("http://localhost:3000"),
+    .default("http://localhost:5173"),
+    
+    FRONTEND_URL: z
+    .string()
+    .url("FRONTEND_URL must be a valid URL")
+    .default("http://localhost:5173"),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
