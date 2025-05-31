@@ -74,7 +74,9 @@ export const eventQuerySchema = z.object({
     difficultyLevel: z
       .enum(["beginner", "intermediate", "advanced"])
       .optional(),
-    status: z.enum(["scheduled", "active", "completed", "cancelled"]).optional(),
+    status: z
+      .enum(["scheduled", "active", "completed", "cancelled"])
+      .optional(),
     upcoming: z
       .string()
       .transform((val) => val === "true")

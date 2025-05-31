@@ -10,6 +10,7 @@ import express from "express";
 import helmet from "helmet";
 import { roleRoutes } from "./routes/role.routes";
 import { serverConfig } from "./utils/config";
+import { userRoutes } from "./routes/user.routes";
 
 interface ApiResponse<T = any> {
   status: "success" | "error";
@@ -37,6 +38,7 @@ app.use(httpLogger);
 app.use("/api/auth", authRoutes);
 app.use("/api/roles", roleRoutes);
 app.use("/api/events", eventRoutes);
+app.use("/api/users", userRoutes);
 
 // Health check
 app.get("/health", async (req, res) => {

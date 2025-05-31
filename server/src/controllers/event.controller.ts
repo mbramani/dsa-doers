@@ -181,7 +181,6 @@ export class EventController {
     res: Response,
   ): Promise<void> => {
     try {
-
       const {
         page,
         limit,
@@ -209,9 +208,8 @@ export class EventController {
           (sortBy as "scheduledAt" | "title" | "createdAt") || "scheduledAt",
         sortOrder: (sortOrder as "asc" | "desc") || "asc",
       };
-      
-      const result = await eventService.getEvents(
-        filters      );
+
+      const result = await eventService.getEvents(filters);
 
       if (!result.success) {
         const response: ApiResponse = {

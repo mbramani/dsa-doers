@@ -259,9 +259,9 @@ export class EventService {
       if (updateData.status && updateData.status !== existingEvent.status) {
         const validTransition = this.isValidStatusTransition(
           existingEvent.status,
-          updateData.status
+          updateData.status,
         );
-        
+
         if (!validTransition.valid) {
           return {
             success: false,
@@ -271,7 +271,10 @@ export class EventService {
       }
 
       // Validate prerequisite roles if being updated
-      if (updateData.prerequisiteRoles && updateData.prerequisiteRoles.length > 0) {
+      if (
+        updateData.prerequisiteRoles &&
+        updateData.prerequisiteRoles.length > 0
+      ) {
         const existingRoles = await prisma.role.findMany({
           where: {
             name: { in: updateData.prerequisiteRoles },
@@ -302,7 +305,8 @@ export class EventService {
           discordUpdateData.description =
             `${updateData.description}\n\n` +
             `Difficulty: ${updateData.difficultyLevel || existingEvent.difficultyLevel || "Not specified"}\n` +
-            ((updateData.prerequisiteRoles || existingEvent.prerequisiteRoles).length > 0
+            ((updateData.prerequisiteRoles || existingEvent.prerequisiteRoles)
+              .length > 0
               ? `Required roles: ${(updateData.prerequisiteRoles || existingEvent.prerequisiteRoles).join(", ")}`
               : "Open to all members");
         }
@@ -312,7 +316,10 @@ export class EventService {
 
         // Handle status update for Discord
         if (updateData.status) {
-          const discordStatusMap: Record<string, "Active" | "Completed" | "Canceled"> = {
+          const discordStatusMap: Record<
+            string,
+            "Active" | "Completed" | "Canceled"
+          > = {
             active: "Active",
             completed: "Completed",
             cancelled: "Canceled",
@@ -332,13 +339,19 @@ export class EventService {
           );
 
           if (!discordUpdateResult.success) {
-            logger.warn(`Failed to update Discord event: ${discordUpdateResult.error}`);
+            logger.warn(
+              `Failed to update Discord event: ${discordUpdateResult.error}`,
+            );
           }
         }
       }
 
       // Update channel permissions if prerequisite roles changed
-      if (updateData.prerequisiteRoles && existingEvent.discordChannelId && discordService.isReady()) {
+      if (
+        updateData.prerequisiteRoles &&
+        existingEvent.discordChannelId &&
+        discordService.isReady()
+      ) {
         // Get Discord role IDs for new prerequisite roles
         const prerequisiteRoleIds: string[] = [];
         if (updateData.prerequisiteRoles.length > 0) {
@@ -364,7 +377,9 @@ export class EventService {
         );
 
         if (!permissionResult.success) {
-          logger.warn(`Failed to update channel permissions: ${permissionResult.error}`);
+          logger.warn(
+            `Failed to update channel permissions: ${permissionResult.error}`,
+          );
         }
       }
 
@@ -398,7 +413,9 @@ export class EventService {
       await activityService.logActivity({
         actorId: updatedBy,
         actorType: "USER",
-        actionType: updateData.status ? "EVENT_STATUS_UPDATED" : "EVENT_UPDATED",
+        actionType: updateData.status
+          ? "EVENT_STATUS_UPDATED"
+          : "EVENT_UPDATED",
         entityType: "EVENT",
         entityId: eventId,
         details: {
@@ -411,10 +428,12 @@ export class EventService {
         },
       });
 
-      logger.info('Event updated successfully', {
+      logger.info("Event updated successfully", {
         eventId,
         updatedFields: Object.keys(updateData),
-        statusChanged: updateData.status ? `${existingEvent.status} -> ${updateData.status}` : false,
+        statusChanged: updateData.status
+          ? `${existingEvent.status} -> ${updateData.status}`
+          : false,
         updatedBy,
       });
 
@@ -426,7 +445,8 @@ export class EventService {
       logger.error("Failed to update event:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to update event",
+        error:
+          error instanceof Error ? error.message : "Failed to update event",
       };
     }
   }
@@ -500,7 +520,7 @@ export class EventService {
     }
   }
 
-public async getEvents(
+  public async getEvents(
     filters: EventFilters,
   ): Promise<ServiceResult<{ events: EventType[]; total: number }>> {
     try {
@@ -609,7 +629,7 @@ public async getEvents(
   }
   private isValidStatusTransition(
     currentStatus: string,
-    newStatus: string
+    newStatus: string,
   ): { valid: boolean; error?: string } {
     const validTransitions: Record<string, string[]> = {
       scheduled: ["active", "cancelled"],

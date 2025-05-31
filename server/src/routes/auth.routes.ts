@@ -21,10 +21,4 @@ router.get("/me", authenticateToken, authController.getCurrentUser);
 router.post("/logout", authController.logout);
 router.post("/refresh", authController.refreshToken);
 
-// Admin only routes
-router.get("/users", authenticateToken, requireRoles(["ADMIN"]), (req, res) => {
-  // Get all users route
-  res.json({ message: "Admin users endpoint" });
-});
-
 export { router as authRoutes };

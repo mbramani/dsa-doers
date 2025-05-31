@@ -596,7 +596,7 @@ export class DiscordService {
   }
 
   public async syncUserRoles(
-    userId: string,
+    discordId: string,
     platformRoles: string[],
   ): Promise<
     DiscordServiceResult<{
@@ -616,10 +616,10 @@ export class DiscordService {
       // Fetch the member from Discord
       let member;
       try {
-        member = await this.guild.members.fetch(userId);
+        member = await this.guild.members.fetch(discordId);
       } catch (error) {
         logger.warn("User not found in Discord guild during role sync", {
-          userId,
+          discordId,
           error: error instanceof Error ? error.message : "Unknown error",
         });
 
@@ -656,7 +656,7 @@ export class DiscordService {
             addedRoles.push(role.name);
 
             logger.info("Added Discord role during sync", {
-              userId,
+              discordId,
               roleId: role.id,
               roleName: role.name,
             });
@@ -665,7 +665,7 @@ export class DiscordService {
             errors.push(errorMsg);
 
             logger.error("Failed to add Discord role during sync", {
-              userId,
+              discordId,
               roleId: role.id,
               roleName: role.name,
               error: error instanceof Error ? error.message : "Unknown error",
@@ -682,7 +682,7 @@ export class DiscordService {
             removedRoles.push(role.name);
 
             logger.info("Removed Discord role during sync", {
-              userId,
+              discordId,
               roleId: role.id,
               roleName: role.name,
             });
@@ -691,7 +691,7 @@ export class DiscordService {
             errors.push(errorMsg);
 
             logger.error("Failed to remove Discord role during sync", {
-              userId,
+              discordId,
               roleId: role.id,
               roleName: role.name,
               error: error instanceof Error ? error.message : "Unknown error",
@@ -701,7 +701,7 @@ export class DiscordService {
       }
 
       logger.info("Discord role sync completed", {
-        userId,
+        discordId,
         addedCount: addedRoles.length,
         removedCount: removedRoles.length,
         errorCount: errors.length,
@@ -720,7 +720,7 @@ export class DiscordService {
     } catch (error) {
       logger.error("Discord role sync error", {
         error: error instanceof Error ? error.message : "Unknown error",
-        userId,
+        discordId,
       });
 
       return {
