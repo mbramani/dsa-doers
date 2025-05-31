@@ -350,8 +350,12 @@ export class RoleService {
           orderBy: {
             [filters.sortBy]: filters.sortOrder,
           },
-          skip: (filters.page - 1) * filters.limit,
-          take: filters.limit,
+          ...(filters.all
+            ? {}
+            : {
+                skip: (filters.page - 1) * filters.limit,
+                take: filters.limit,
+              }),
         }),
         prisma.role.count({ where }),
       ]);

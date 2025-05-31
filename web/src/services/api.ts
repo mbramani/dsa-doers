@@ -1,22 +1,25 @@
-import axios from 'axios';
+import type { ApiResponse, User } from "@/types/auth";
+import axios, { type AxiosResponse } from "axios";
 
 const API_BASE_URL =
-    import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
 
 const apiClient = axios.create({
-    baseURL: API_BASE_URL,
-    withCredentials: true,
+  baseURL: API_BASE_URL,
+  withCredentials: true,
 });
 
-// Optional: handle 401 by redirecting to login
-apiClient.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        if (error.response?.status === 401) {
-            window.location.href = '/';
-        }
-        return Promise.reject(error);
-    }
-);
+// Auth service with proper typing
+export const authService = {
+  me: (): Promise<AxiosResponse<ApiResponse<User>>> =>
+    apiClient.get("/auth/me"),
+
+  logout: (): Promise<AxiosResponse<ApiResponse<void>>> =>
+    apiClient.post("/auth/logout"),
+
+  loginWithDiscord: (): void => {
+    window.location.href = `${API_BASE_URL}/auth/discord`;
+  },
+};
 
 export default apiClient;

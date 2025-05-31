@@ -57,8 +57,8 @@ export class UserController {
       const filters = req.query as unknown as UserFilters;
 
       const safeFilters: UserFilters = {
-        page: filters.page || 1,
-        limit: filters.limit || 20,
+        page: Number(filters.page) || 1,
+        limit: Number(filters.limit) || 20,
         search: filters.search,
         role: filters.role,
         status: filters.status || "active",

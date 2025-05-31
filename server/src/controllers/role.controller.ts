@@ -165,10 +165,11 @@ export class RoleController {
 
   public getRoles = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { page, limit, search, isSystemRole, sortBy, sortOrder } =
+      const { page, limit, search, isSystemRole, sortBy, sortOrder, all } =
         req.query;
 
       const filters = {
+        all: all === "true" ? true : false,
         page: Number(page) || 1,
         limit: Number(limit) || 20,
         search: search as string,

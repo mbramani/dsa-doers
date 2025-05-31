@@ -123,7 +123,7 @@ export class AuthController {
 
       // Redirect to dashboard
       const redirectUrl = new URL(`${serverConfig.frontendUrl}/dashboard`);
-      
+
       if (isNewUser) {
         redirectUrl.searchParams.set("newUser", "true");
       }
@@ -146,9 +146,7 @@ export class AuthController {
         userAgent: req.get("User-Agent"),
       });
 
-      const errorUrl = new URL(
-        `${serverConfig.frontendUrl}/auth/error`,
-      );
+      const errorUrl = new URL(`${serverConfig.frontendUrl}/auth/error`);
       errorUrl.searchParams.set(
         "message",
         "Authentication failed due to an unexpected error",

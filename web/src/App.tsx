@@ -1,11 +1,55 @@
-import { Button } from "@/components/ui/button"
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
-function App() {
+import AdminDashboardPage from "@/pages/admin/admin-dashboard-page";
+import AdminLayout from "@/components/admin/admin-layout";
+import AdminRoute from "@/components/auth/admin-route";
+import { AuthProvider } from "@/contexts/auth-context";
+import DashboardPage from "@/pages/dashboard-page";
+import HomePage from "@/pages/home-page";
+import ProtectedRoute from "@/components/auth/protected-route";
+import React from "react";
+import UsersPage from "@/pages/admin/users-page";
+
+const App: React.FC = () => {
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center">
-      <Button>Click me</Button>
-    </div>
-  )
-}
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<HomePage />} />
 
-export default App
+          {/* Protected routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin routes */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <AdminLayout />
+                </AdminRoute>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<AdminDashboardPage />} />
+            <Route path="users" element={<UsersPage />} />
+            {/* Add more admin routes here */}
+          </Route>
+
+          {/* Redirect any unknown routes to home */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
+  );
+};
+
+export default App;

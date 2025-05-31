@@ -47,8 +47,8 @@ const envSchema = z.object({
     .string()
     .url("CORS_ORIGIN must be a valid URL")
     .default("http://localhost:5173"),
-    
-    FRONTEND_URL: z
+
+  FRONTEND_URL: z
     .string()
     .url("FRONTEND_URL must be a valid URL")
     .default("http://localhost:5173"),

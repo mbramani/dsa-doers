@@ -83,6 +83,11 @@ export const roleQuerySchema = z.object({
       .optional(),
     sortBy: z.enum(["name", "sortOrder", "createdAt"]).default("sortOrder"),
     sortOrder: z.enum(["asc", "desc"]).default("asc"),
+    all: z
+      .string()
+      .transform((val) => val === "true")
+      .optional()
+      .default("false"),
   }),
 });
 
