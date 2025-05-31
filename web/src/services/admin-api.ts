@@ -1,7 +1,12 @@
 import type {
+  CreateRoleData,
   PaginatedRoles,
   PaginatedUsers,
+  Role,
   RoleAssignmentResult,
+  RoleFilters,
+  SyncResult,
+  UpdateRoleData,
   UserAnalytics,
   UserFilters,
   UserWithRoles,
@@ -50,21 +55,25 @@ export const adminService = {
     ),
 
   syncUser: (userId: string, reason: string) =>
-    apiClient.post<
-      ApiResponse<{
-        added: string[];
-        removed: string[];
-        errors: string[];
-      }>
-    >(`/users/${userId}/sync`, { reason }),
+    apiClient.post<ApiResponse<SyncResult>>(`/users/${userId}/sync`, {
+      reason,
+    }),
 
-  // Role management - using the correct endpoint with proper typing
-  getRoles: (params?: {
-    all?: boolean;
-    search?: string;
-    page?: number;
-    limit?: number;
-  }) => apiClient.get<ApiResponse<PaginatedRoles>>("/roles", { params }),
+  // Role management
+  getRoles: (params?: Partial<RoleFilters>) =>
+    apiClient.get<ApiResponse<PaginatedRoles>>("/roles", { params }),
+
+  getRoleById: (roleId: string) =>
+    apiClient.get<ApiResponse<Role>>(`/roles/${roleId}`),
+
+  createRole: (roleData: CreateRoleData) =>
+    apiClient.post<ApiResponse<Role>>("/roles", roleData),
+
+  updateRole: (roleId: string, roleData: UpdateRoleData) =>
+    apiClient.put<ApiResponse<Role>>(`/roles/${roleId}`, roleData),
+
+  deleteRole: (roleId: string) =>
+    apiClient.delete<ApiResponse<void>>(`/roles/${roleId}`),
 
   // Role assignment via roles endpoint
   assignRoleViaRoles: (

@@ -8,6 +8,7 @@ import DashboardPage from "@/pages/dashboard-page";
 import HomePage from "@/pages/home-page";
 import ProtectedRoute from "@/components/auth/protected-route";
 import React from "react";
+import RolesPage from "./pages/admin/roles-page";
 import UsersPage from "@/pages/admin/users-page";
 
 const App: React.FC = () => {
@@ -41,7 +42,7 @@ const App: React.FC = () => {
           >
             <Route index element={<AdminDashboardPage />} />
             <Route path="users" element={<UsersPage />} />
-            {/* Add more admin routes here */}
+            <Route path="roles" element={<RolesPage />} />
           </Route>
 
           {/* Redirect any unknown routes to home */}

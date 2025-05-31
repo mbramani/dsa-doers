@@ -380,29 +380,49 @@ export class DiscordService {
 
   private convertPermissions(permissions: string[]): bigint[] {
     const permissionMap: Record<string, bigint> = {
+      // General Permissions
       ADMINISTRATOR: PermissionFlagsBits.Administrator,
-      MANAGE_MESSAGES: PermissionFlagsBits.ManageMessages,
-      MANAGE_CHANNELS: PermissionFlagsBits.ManageChannels,
-      KICK_MEMBERS: PermissionFlagsBits.KickMembers,
-      MUTE_MEMBERS: PermissionFlagsBits.MuteMembers,
-      SEND_MESSAGES: PermissionFlagsBits.SendMessages,
-      CONNECT: PermissionFlagsBits.Connect,
-      SPEAK: PermissionFlagsBits.Speak,
-      USE_EXTERNAL_EMOJIS: PermissionFlagsBits.UseExternalEmojis,
-      PRIORITY_SPEAKER: PermissionFlagsBits.PrioritySpeaker,
+      VIEW_AUDIT_LOG: PermissionFlagsBits.ViewAuditLog,
+      VIEW_SERVER_INSIGHTS: PermissionFlagsBits.ViewGuildInsights,
       MANAGE_GUILD: PermissionFlagsBits.ManageGuild,
       MANAGE_ROLES: PermissionFlagsBits.ManageRoles,
+      MANAGE_CHANNELS: PermissionFlagsBits.ManageChannels,
+      KICK_MEMBERS: PermissionFlagsBits.KickMembers,
       BAN_MEMBERS: PermissionFlagsBits.BanMembers,
       CREATE_INSTANT_INVITE: PermissionFlagsBits.CreateInstantInvite,
       CHANGE_NICKNAME: PermissionFlagsBits.ChangeNickname,
       MANAGE_NICKNAMES: PermissionFlagsBits.ManageNicknames,
-      READ_MESSAGE_HISTORY: PermissionFlagsBits.ReadMessageHistory,
+      MANAGE_EMOJIS_AND_STICKERS: PermissionFlagsBits.ManageEmojisAndStickers,
+      MANAGE_WEBHOOKS: PermissionFlagsBits.ManageWebhooks,
+
+      // Text Permissions
       VIEW_CHANNEL: PermissionFlagsBits.ViewChannel,
-      ADD_REACTIONS: PermissionFlagsBits.AddReactions,
-      ATTACH_FILES: PermissionFlagsBits.AttachFiles,
+      SEND_MESSAGES: PermissionFlagsBits.SendMessages,
+      SEND_TTS_MESSAGES: PermissionFlagsBits.SendTTSMessages,
+      MANAGE_MESSAGES: PermissionFlagsBits.ManageMessages,
       EMBED_LINKS: PermissionFlagsBits.EmbedLinks,
-      USE_EXTERNAL_STICKERS: PermissionFlagsBits.UseExternalStickers,
+      ATTACH_FILES: PermissionFlagsBits.AttachFiles,
+      READ_MESSAGE_HISTORY: PermissionFlagsBits.ReadMessageHistory,
       MENTION_EVERYONE: PermissionFlagsBits.MentionEveryone,
+      USE_EXTERNAL_EMOJIS: PermissionFlagsBits.UseExternalEmojis,
+      USE_EXTERNAL_STICKERS: PermissionFlagsBits.UseExternalStickers,
+      ADD_REACTIONS: PermissionFlagsBits.AddReactions,
+      USE_SLASH_COMMANDS: PermissionFlagsBits.UseApplicationCommands,
+      MANAGE_THREADS: PermissionFlagsBits.ManageThreads,
+      CREATE_PUBLIC_THREADS: PermissionFlagsBits.CreatePublicThreads,
+      CREATE_PRIVATE_THREADS: PermissionFlagsBits.CreatePrivateThreads,
+      SEND_MESSAGES_IN_THREADS: PermissionFlagsBits.SendMessagesInThreads,
+
+      // Voice Permissions
+      CONNECT: PermissionFlagsBits.Connect,
+      SPEAK: PermissionFlagsBits.Speak,
+      MUTE_MEMBERS: PermissionFlagsBits.MuteMembers,
+      DEAFEN_MEMBERS: PermissionFlagsBits.DeafenMembers,
+      MOVE_MEMBERS: PermissionFlagsBits.MoveMembers,
+      USE_VAD: PermissionFlagsBits.UseVAD,
+      PRIORITY_SPEAKER: PermissionFlagsBits.PrioritySpeaker,
+      STREAM: PermissionFlagsBits.Stream,
+      REQUEST_TO_SPEAK: PermissionFlagsBits.RequestToSpeak,
     };
 
     return permissions
