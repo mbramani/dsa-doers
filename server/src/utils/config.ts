@@ -1,5 +1,5 @@
-import dotenv from 'dotenv';
-import { envSchema, type EnvConfig } from '../schemas/env';
+import dotenv from "dotenv";
+import { envSchema, type EnvConfig } from "../schemas/env";
 
 // Load environment variables
 dotenv.config();
@@ -7,10 +7,10 @@ dotenv.config();
 const validateEnv = (): EnvConfig => {
   try {
     const config = envSchema.parse(process.env);
-    console.log('✅ Environment variables validated successfully');
+    console.log("✅ Environment variables validated successfully");
     return config;
   } catch (error) {
-    console.error('❌ Environment validation failed:', error);
+    console.error("❌ Environment validation failed:", error);
     process.exit(1);
   }
 };

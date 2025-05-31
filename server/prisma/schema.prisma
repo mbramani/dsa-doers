@@ -1,0 +1,134 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Users table - stores Discord OAuth users
+model User {
+  id                    String   @id @default(cuid())
+  discordId             String   @unique @map("discord_id")
+  discordUsername       String   @map("discord_username")
+  discordDiscriminator  String?  @map("discord_discriminator")
+  discordAvatar         String?  @map("discord_avatar")
+  email                 String?  @unique
+
+  isArchived            Boolean  @default(false) @map("is_archived")
+  
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  userRoles             UserRole[]
+  oauthTokens           OAuthToken[]
+  rolesGrantedBy        UserRole[] @relation("RoleGranter")
+  activityLogs          ActivityLog[]
+
+  @@index([discordId])
+  @@index([isArchived])
+  @@map("users")
+}
+
+// Roles table - defines progression roles in the system
+model Role {
+  id              String    @id @default(cuid())
+  name            String    @unique
+  description     String?
+  discordRoleId   String?   @unique @map("discord_role_id")
+  sortOrder       Int       @default(0) @map("sort_order")
+  isArchived      Boolean   @default(false) @map("is_archived")
+  color           String?   // Hex color for UI display
+  isSystemRole   Boolean   @default(false) @map("is_system_role")
+  
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  userRoles       UserRole[]
+
+  @@index([name])
+  @@index([isArchived])
+  @@index([sortOrder])
+  @@map("roles")
+}
+
+// User roles junction table - many-to-many relationship with audit trail
+model UserRole {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  roleId      String    @map("role_id")
+  grantedAt   DateTime  @default(now()) @map("granted_at")
+  grantedBy   String?   @map("granted_by")
+  revokedAt   DateTime? @map("revoked_at")
+  revokedBy   String?   @map("revoked_by")
+  grantReason String?   @map("grant_reason")
+  revokeReason String?  @map("revoke_reason")
+  
+  isSystemGranted Boolean @default(false) @map("is_system_granted")
+
+  // Relations
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  granter     User?     @relation("RoleGranter", fields: [grantedBy], references: [id], onDelete: SetNull)
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+// OAuth tokens table - stores Discord OAuth tokens
+model OAuthToken {
+  id           String    @id @default(cuid())
+  userId       String    @map("user_id")
+  provider     String    @default("discord") // For future extensibility
+  accessToken  String    @map("access_token")
+  refreshToken String?   @map("refresh_token")
+  tokenType    String    @default("Bearer") @map("token_type")
+  scope        String?   // OAuth scopes granted
+  expiresAt    DateTime? @map("expires_at")
+  
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("oauth_tokens")
+}
+
+// Activity log table - tracks all user actions for audit trail
+model ActivityLog {
+  id          String    @id @default(cuid())
+  actorId     String?   @map("actor_id") // user who performed the action
+  actorType   String    @default("USER") @map("actor_type") // 'USER' or 'SYSTEM'
+  actionType  String    @map("action_type") // 'create_event', 'assign_role', 'submit_assignment', etc.
+  entityType  String    @map("entity_type") // 'user', 'role', 'event', 'assignment', 'submission'
+  entityId    String?   @map("entity_id") // ID of the affected entity
+  details     Json?     // additional context as JSON
+  ipAddress   String?   @map("ip_address")
+  userAgent   String?   @map("user_agent")
+  
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  actor       User?     @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId])
+  @@index([actionType])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("activity_log")
+}
