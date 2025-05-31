@@ -1,9 +1,20 @@
 import {
+  ChannelType,
   Client,
   Role as DiscordRole,
   GatewayIntentBits,
   Guild,
+  GuildScheduledEvent,
+  GuildScheduledEventCreateOptions,
+  GuildScheduledEventEditOptions,
+  GuildScheduledEventEntityType,
+  GuildScheduledEventPrivacyLevel,
+  GuildScheduledEventStatus,
+  OverwriteResolvable,
+  OverwriteType,
   PermissionFlagsBits,
+  PermissionOverwriteOptions,
+  VoiceChannel,
 } from "discord.js";
 import { DiscordTokenResponse, DiscordUser } from "../types/auth";
 
@@ -783,6 +794,590 @@ export class DiscordService {
 
   public isReady(): boolean {
     return this.isInitialized && this.client.isReady();
+  }
+
+  public async createScheduledEvent(eventData: {
+    name: string;
+    description: string;
+    scheduledStartTime: Date;
+    scheduledEndTime?: Date;
+    channelId?: string;
+    entityType: keyof typeof GuildScheduledEventEntityType;
+    privacyLevel: keyof typeof GuildScheduledEventPrivacyLevel;
+    reason?: string;
+  }): Promise<DiscordServiceResult<GuildScheduledEvent>> {
+    try {
+      if (!this.isInitialized || !this.guild) {
+        return {
+          success: false,
+          error: "Discord service not initialized",
+        };
+      }
+      const eventCreateOptions: GuildScheduledEventCreateOptions = {
+        name: eventData.name,
+        description: eventData.description,
+        scheduledStartTime: eventData.scheduledStartTime,
+        entityType: GuildScheduledEventEntityType[eventData.entityType],
+        privacyLevel: GuildScheduledEventPrivacyLevel[eventData.privacyLevel],
+        reason: eventData.reason ?? "Created by DSA Doers platform",
+        ...(eventData.scheduledEndTime && {
+          scheduledEndTime: eventData.scheduledEndTime,
+        }),
+        ...(eventData.channelId && { channel: eventData.channelId }),
+      };
+
+      const scheduledEvent =
+        await this.guild.scheduledEvents.create(eventCreateOptions);
+
+      logger.info("Discord scheduled event created successfully", {
+        eventId: scheduledEvent.id,
+        eventName: scheduledEvent.name,
+        channelId: eventData.channelId,
+        scheduledStart: eventData.scheduledStartTime,
+      });
+
+      return {
+        success: true,
+        data: scheduledEvent,
+      };
+    } catch (error) {
+      logger.error("Failed to create Discord scheduled event", {
+        error: error instanceof Error ? error.message : "Unknown error",
+        eventName: eventData.name,
+      });
+
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to create Discord event",
+      };
+    }
+  }
+
+  public async updateScheduledEvent(
+    eventId: string,
+    updateData: Partial<{
+      name: string;
+      description: string;
+      scheduledStartTime: Date;
+      scheduledEndTime: Date;
+      channelId: string;
+      status: keyof typeof GuildScheduledEventStatus;
+    }>,
+    reason?: string,
+  ): Promise<DiscordServiceResult<GuildScheduledEvent>> {
+    try {
+      if (!this.isInitialized || !this.guild) {
+        return {
+          success: false,
+          error: "Discord service not initialized",
+        };
+      }
+
+      const scheduledEvent = await this.guild.scheduledEvents.fetch(eventId);
+      if (!scheduledEvent) {
+        return {
+          success: false,
+          error: "Discord event not found",
+        };
+      }
+
+      const isValidStatus = (
+        status?: string,
+      ): status is "Active" | "Canceled" | "Completed" =>
+        status === "Active" || status === "Canceled" || status === "Completed";
+
+      const eventEditOptions: GuildScheduledEventEditOptions<
+        GuildScheduledEventStatus,
+        | GuildScheduledEventStatus.Completed
+        | GuildScheduledEventStatus.Active
+        | GuildScheduledEventStatus.Canceled
+      > = {
+        ...(updateData.name && { name: updateData.name }),
+        ...(updateData.description && { description: updateData.description }),
+        ...(reason && { reason }),
+        ...(updateData.channelId && { channel: updateData.channelId }),
+        ...(isValidStatus(updateData.status) && {
+          status: GuildScheduledEventStatus[updateData.status],
+        }),
+        ...(updateData.scheduledStartTime && {
+          scheduledStartTime: updateData.scheduledStartTime,
+        }),
+        ...(updateData.scheduledEndTime && {
+          scheduledEndTime: updateData.scheduledEndTime,
+        }),
+      };
+
+      const updatedEvent = await scheduledEvent.edit(eventEditOptions);
+
+      logger.info("Discord scheduled event updated successfully", {
+        eventId: updatedEvent.id,
+        eventName: updatedEvent.name,
+        updatedFields: Object.keys(updateData),
+      });
+
+      return {
+        success: true,
+        data: updatedEvent,
+      };
+    } catch (error) {
+      logger.error("Failed to update Discord scheduled event", {
+        error: error instanceof Error ? error.message : "Unknown error",
+        eventId,
+      });
+
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to update Discord event",
+      };
+    }
+  }
+
+  public async deleteScheduledEvent(
+    eventId: string,
+    reason?: string,
+  ): Promise<DiscordServiceResult<boolean>> {
+    try {
+      if (!this.isInitialized || !this.guild) {
+        return {
+          success: false,
+          error: "Discord service not initialized",
+        };
+      }
+
+      const scheduledEvent = await this.guild.scheduledEvents.fetch(eventId);
+      if (!scheduledEvent) {
+        return {
+          success: false,
+          error: "Discord event not found",
+        };
+      }
+
+      await scheduledEvent.delete();
+
+      logger.info("Discord scheduled event deleted successfully", {
+        eventId,
+        eventName: scheduledEvent.name,
+      });
+
+      return {
+        success: true,
+        data: true,
+      };
+    } catch (error) {
+      logger.error("Failed to delete Discord scheduled event", {
+        error: error instanceof Error ? error.message : "Unknown error",
+        eventId,
+      });
+
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to delete Discord event",
+      };
+    }
+  }
+
+  public async createPrivateChannel(
+    name: string,
+    channelType: "voice" | "stage",
+    prerequisiteRoleIds: string[],
+    reason?: string,
+  ): Promise<DiscordServiceResult<VoiceChannel | any>> {
+    if (channelType === "stage") {
+      return this.createPrivateStageChannel(name, prerequisiteRoleIds, reason);
+    } else {
+      return this.createPrivateVoiceChannel(name, prerequisiteRoleIds, reason);
+    }
+  }
+
+  public async createPrivateStageChannel(
+    name: string,
+    prerequisiteRoleIds: string[],
+    reason?: string,
+  ): Promise<DiscordServiceResult<any>> {
+    try {
+      if (!this.isInitialized || !this.guild) {
+        return {
+          success: false,
+          error: "Discord service not initialized",
+        };
+      }
+
+      const adminRole = this.guild.roles.cache.find(
+        (role) => role.name === "ADMIN",
+      );
+      const moderatorRole = this.guild.roles.cache.find(
+        (role) => role.name === "MODERATOR",
+      );
+
+      const permissionOverwrites: OverwriteResolvable[] = [
+        {
+          id: this.guild.roles.everyone.id,
+          deny: [PermissionFlagsBits.ViewChannel],
+          type: OverwriteType.Role,
+        },
+      ];
+
+      if (adminRole) {
+        permissionOverwrites.push({
+          id: adminRole.id,
+          allow: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.Connect,
+            PermissionFlagsBits.Speak,
+            PermissionFlagsBits.MuteMembers,
+            PermissionFlagsBits.DeafenMembers,
+            PermissionFlagsBits.ManageChannels,
+          ],
+          type: OverwriteType.Role,
+        });
+      }
+
+      if (moderatorRole) {
+        permissionOverwrites.push({
+          id: moderatorRole.id,
+          allow: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.Connect,
+            PermissionFlagsBits.Speak,
+            PermissionFlagsBits.MuteMembers,
+            PermissionFlagsBits.RequestToSpeak,
+          ],
+          type: OverwriteType.Role,
+        });
+      }
+
+      for (const roleId of prerequisiteRoleIds) {
+        const role = this.guild.roles.cache.get(roleId);
+        if (role) {
+          permissionOverwrites.push({
+            id: role.id,
+            allow: [
+              PermissionFlagsBits.ViewChannel,
+              PermissionFlagsBits.Connect,
+              PermissionFlagsBits.RequestToSpeak, // For stage channels, users request to speak
+            ],
+            type: OverwriteType.Role,
+          });
+        }
+      }
+
+      const channel = await this.guild.channels.create({
+        name,
+        type: ChannelType.GuildStageVoice, // Stage channel type
+        permissionOverwrites,
+        reason: reason || "Created by DSA Doers platform",
+      });
+
+      logger.info("Private stage channel created successfully", {
+        channelId: channel.id,
+        channelName: channel.name,
+        prerequisiteRoles: prerequisiteRoleIds.length,
+      });
+
+      return {
+        success: true,
+        data: channel,
+      };
+    } catch (error) {
+      logger.error("Failed to create private stage channel", {
+        error: error instanceof Error ? error.message : "Unknown error",
+        channelName: name,
+      });
+
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to create private stage channel",
+      };
+    }
+  }
+  public async createPrivateVoiceChannel(
+    name: string,
+    prerequisiteRoleIds: string[],
+    reason?: string,
+  ): Promise<DiscordServiceResult<VoiceChannel>> {
+    try {
+      if (!this.isInitialized || !this.guild) {
+        return {
+          success: false,
+          error: "Discord service not initialized",
+        };
+      }
+
+      const adminRole = this.guild.roles.cache.find(
+        (role) => role.name === "ADMIN",
+      );
+      const moderatorRole = this.guild.roles.cache.find(
+        (role) => role.name === "MODERATOR",
+      );
+
+      const permissionOverwrites: OverwriteResolvable[] = [
+        {
+          id: this.guild.roles.everyone.id,
+          deny: [PermissionFlagsBits.ViewChannel],
+          type: OverwriteType.Role,
+        },
+      ];
+
+      if (adminRole) {
+        permissionOverwrites.push({
+          id: adminRole.id,
+          allow: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.Connect,
+            PermissionFlagsBits.Speak,
+            PermissionFlagsBits.MuteMembers,
+            PermissionFlagsBits.DeafenMembers,
+          ],
+          type: OverwriteType.Role,
+        });
+      }
+
+      if (moderatorRole) {
+        permissionOverwrites.push({
+          id: moderatorRole.id,
+          allow: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.Connect,
+            PermissionFlagsBits.Speak,
+            PermissionFlagsBits.MuteMembers,
+          ],
+          type: OverwriteType.Role,
+        });
+      }
+
+      for (const roleId of prerequisiteRoleIds) {
+        const role = this.guild.roles.cache.get(roleId);
+        if (role) {
+          permissionOverwrites.push({
+            id: role.id,
+            allow: [
+              PermissionFlagsBits.ViewChannel,
+              PermissionFlagsBits.Connect,
+              PermissionFlagsBits.Speak,
+            ],
+            type: OverwriteType.Role,
+          });
+        }
+      }
+
+      const channel = await this.guild.channels.create({
+        name,
+        type: ChannelType.GuildVoice,
+        permissionOverwrites,
+        reason: reason || "Created by DSA Doers platform",
+      });
+
+      logger.info("Private voice channel created successfully", {
+        channelId: channel.id,
+        channelName: channel.name,
+        prerequisiteRoles: prerequisiteRoleIds.length,
+      });
+
+      return {
+        success: true,
+        data: channel,
+      };
+    } catch (error) {
+      logger.error("Failed to create private voice channel", {
+        error: error instanceof Error ? error.message : "Unknown error",
+        channelName: name,
+      });
+
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to create private channel",
+      };
+    }
+  }
+
+  public async updateChannelPermissions(
+    channelId: string,
+    prerequisiteRoleIds: string[],
+    reason?: string,
+  ): Promise<DiscordServiceResult<boolean>> {
+    try {
+      if (!this.isInitialized || !this.guild) {
+        return {
+          success: false,
+          error: "Discord service not initialized",
+        };
+      }
+
+      const channel = this.guild.channels.cache.get(channelId);
+      if (!channel || !channel.isVoiceBased()) {
+        return {
+          success: false,
+          error: "Voice channel not found",
+        };
+      }
+
+      // Get admin and moderator roles
+      const adminRole = this.guild.roles.cache.find(
+        (role) => role.name === "ADMIN",
+      );
+      const moderatorRole = this.guild.roles.cache.find(
+        (role) => role.name === "MODERATOR",
+      );
+
+      // Clear existing permission overwrites for roles (excluding @everyone)
+      const existingOverwrites = channel.permissionOverwrites.cache;
+      for (const [id, overwrite] of existingOverwrites) {
+        if (
+          overwrite.type === OverwriteType.Role &&
+          id !== this.guild.roles.everyone.id
+        ) {
+          await channel.permissionOverwrites.delete(id, reason);
+        }
+      }
+
+      // Add admin permissions
+      if (adminRole) {
+        await channel.permissionOverwrites.create(
+          adminRole,
+          {
+            ViewChannel: true,
+            Connect: true,
+            Speak: true,
+            MuteMembers: true,
+            DeafenMembers: true,
+          },
+          { reason },
+        );
+      }
+
+      // Add moderator permissions
+      if (moderatorRole) {
+        await channel.permissionOverwrites.create(
+          moderatorRole,
+          {
+            ViewChannel: true,
+            Connect: true,
+            Speak: true,
+            MuteMembers: true,
+          },
+          { reason },
+        );
+      }
+
+      // Add prerequisite role permissions
+      for (const roleId of prerequisiteRoleIds) {
+        const role = this.guild.roles.cache.get(roleId);
+        if (role) {
+          await channel.permissionOverwrites.create(
+            role,
+            {
+              ViewChannel: true,
+              Connect: true,
+              Speak: true,
+            },
+            { reason },
+          );
+        }
+      }
+
+      logger.info("Channel permissions updated successfully", {
+        channelId,
+        prerequisiteRoles: prerequisiteRoleIds.length,
+      });
+
+      return {
+        success: true,
+        data: true,
+      };
+    } catch (error) {
+      logger.error("Failed to update channel permissions", {
+        error: error instanceof Error ? error.message : "Unknown error",
+        channelId,
+      });
+
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to update channel permissions",
+      };
+    }
+  }
+
+  public async getChannelInfo(channelId: string): Promise<
+    DiscordServiceResult<{
+      id: string;
+      name: string;
+      type: string;
+      parentId?: string;
+    }>
+  > {
+    try {
+      if (!this.isInitialized || !this.guild) {
+        return {
+          success: false,
+          error: "Discord service not initialized",
+        };
+      }
+
+      const channel = this.guild.channels.cache.get(channelId);
+      if (!channel) {
+        return {
+          success: false,
+          error: "Channel not found in Discord server",
+        };
+      }
+
+      let channelTypeName: string;
+      switch (channel.type) {
+        case ChannelType.GuildVoice:
+          channelTypeName = "GUILD_VOICE";
+          break;
+        case ChannelType.GuildStageVoice:
+          channelTypeName = "GUILD_STAGE_VOICE";
+          break;
+        case ChannelType.GuildText:
+          channelTypeName = "GUILD_TEXT";
+          break;
+        case ChannelType.GuildCategory:
+          channelTypeName = "GUILD_CATEGORY";
+          break;
+        default:
+          channelTypeName = "OTHER";
+      }
+
+      return {
+        success: true,
+        data: {
+          id: channel.id,
+          name: channel.name,
+          type: channelTypeName,
+          parentId: channel.parentId || undefined,
+        },
+      };
+    } catch (error) {
+      logger.error("Failed to get channel info", {
+        error: error instanceof Error ? error.message : "Unknown error",
+        channelId,
+      });
+
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to get channel info",
+      };
+    }
   }
 }
 

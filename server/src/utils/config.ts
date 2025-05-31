@@ -29,7 +29,7 @@ export const databaseConfig = {
 } as const;
 
 export const discordConfig = {
-  token: config.DISCORD_TOKEN,
+  token: config.DISCORD_BOT_TOKEN,
   clientId: config.DISCORD_CLIENT_ID,
   clientSecret: config.DISCORD_CLIENT_SECRET,
   guildId: config.DISCORD_GUILD_ID,

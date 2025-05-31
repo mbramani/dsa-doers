@@ -5,6 +5,7 @@ import { authRoutes } from "./routes/auth.routes";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import { db } from "./services/database.service";
+import { eventRoutes } from "./routes/event.routes";
 import express from "express";
 import helmet from "helmet";
 import { roleRoutes } from "./routes/role.routes";
@@ -35,6 +36,7 @@ app.use(httpLogger);
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/roles", roleRoutes);
+app.use("/api/events", eventRoutes);
 
 // Health check
 app.get("/health", async (req, res) => {

@@ -29,6 +29,7 @@ model User {
 
   // Relations
   userRoles             UserRole[]
+  events                Event[]
   oauthTokens           OAuthToken[]
   rolesGrantedBy        UserRole[] @relation("RoleGranter")
   activityLogs          ActivityLog[]
@@ -84,6 +85,38 @@ model UserRole {
   @@index([userId])
   @@index([roleId])
   @@map("user_roles")
+}
+
+// Events table - stores learning events with role-based access control
+model Event {
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  eventType       String    @map("event_type") // 'voice' or 'stage'
+  difficultyLevel String?   @map("difficulty_level") // 'beginner', 'intermediate', 'advanced'
+  status          String    @default("scheduled") // 'scheduled', 'active', 'completed', 'cancelled'
+  scheduledAt     DateTime  @map("scheduled_at")
+  duration        Int?      // duration in minutes
+  capacity        Int?      // max participants
+
+  discordChannelId String? @map("discord_channel_id") // associated Discord channel/stage
+  discordEventId   String? @map("discord_event_id")   // Discord scheduled event ID
+
+  prerequisiteRoles String[] @map("prerequisite_roles") // role names required to access
+  isArchived       Boolean  @default(false) @map("is_archived")
+  
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  createdBy       String    @map("created_by")
+
+  // Relations
+  creator         User      @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+
+  @@index([scheduledAt])
+  @@index([eventType])
+  @@index([difficultyLevel])
+  @@index([isArchived])
+  @@map("events")
 }
 
 // OAuth tokens table - stores Discord OAuth tokens

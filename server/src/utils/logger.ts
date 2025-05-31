@@ -105,7 +105,6 @@ const createLogger = (): winston.Logger => {
 
 export const logger = createLogger();
 
-
 // Morgan HTTP logger middleware with better configuration
 const createMorganFormat = (): string => {
   return IS_PRODUCTION
