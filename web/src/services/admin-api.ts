@@ -1,11 +1,17 @@
 import type {
+  CreateEventData,
   CreateRoleData,
+  Event,
+  EventAnalytics,
+  EventFilters,
+  PaginatedEvents,
   PaginatedRoles,
   PaginatedUsers,
   Role,
   RoleAssignmentResult,
   RoleFilters,
   SyncResult,
+  UpdateEventData,
   UpdateRoleData,
   UserAnalytics,
   UserFilters,
@@ -101,4 +107,32 @@ export const adminService = {
       reason,
       syncWithDiscord,
     }),
+
+  // Event management
+  getEvents: (filters: Partial<EventFilters>) =>
+    apiClient.get<ApiResponse<PaginatedEvents>>("/events", { params: filters }),
+
+  getEventAnalytics: () =>
+    apiClient.get<ApiResponse<EventAnalytics>>("/events/analytics"),
+
+  getEventById: (eventId: string) =>
+    apiClient.get<ApiResponse<Event>>(`/events/${eventId}`),
+
+  createEvent: (eventData: CreateEventData) =>
+    apiClient.post<ApiResponse<Event>>("/events", eventData),
+
+  updateEvent: (eventId: string, eventData: UpdateEventData) =>
+    apiClient.put<ApiResponse<Event>>(`/events/${eventId}`, eventData),
+
+  deleteEvent: (eventId: string, reason: string) =>
+    apiClient.delete<ApiResponse<void>>(`/events/${eventId}`, {
+      data: { reason },
+    }),
+
+  updateEventStatus: (
+    eventId: string,
+    status: Event["status"],
+    reason: string,
+  ) =>
+    apiClient.put<ApiResponse<Event>>(`/events/${eventId}`, { status, reason }),
 };

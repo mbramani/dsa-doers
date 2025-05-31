@@ -5,6 +5,7 @@ import AdminLayout from "@/components/admin/admin-layout";
 import AdminRoute from "@/components/auth/admin-route";
 import { AuthProvider } from "@/contexts/auth-context";
 import DashboardPage from "@/pages/dashboard-page";
+import EventsPage from "./pages/admin/events-page";
 import HomePage from "@/pages/home-page";
 import ProtectedRoute from "@/components/auth/protected-route";
 import React from "react";
@@ -43,6 +44,7 @@ const App: React.FC = () => {
             <Route index element={<AdminDashboardPage />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="roles" element={<RolesPage />} />
+            <Route path="events" element={<EventsPage />} />
           </Route>
 
           {/* Redirect any unknown routes to home */}

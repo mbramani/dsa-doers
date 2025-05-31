@@ -452,3 +452,95 @@ export const PERMISSION_CATEGORIES = {
   membership: { label: "Membership Permissions", icon: "👥" },
   advanced: { label: "Advanced Permissions", icon: "🔒" },
 };
+
+// Event types
+export interface Event {
+  id: string;
+  title: string;
+  description: string | null;
+  eventType: "voice" | "stage";
+  difficultyLevel: "beginner" | "intermediate" | "advanced" | null;
+  status: "scheduled" | "active" | "completed" | "cancelled";
+  scheduledAt: string;
+  duration: number | null;
+  capacity: number | null;
+  prerequisiteRoles: string[];
+  discordChannelId: string | null;
+  discordEventId: string | null;
+  isArchived: boolean;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+  creator: {
+    id: string;
+    discordUsername: string;
+    discordAvatar: string | null;
+  };
+}
+
+export interface EventFilters {
+  page: number;
+  limit: number;
+  search?: string;
+  eventType?: "voice" | "stage";
+  difficultyLevel?: "beginner" | "intermediate" | "advanced";
+  status?: "scheduled" | "active" | "completed" | "cancelled";
+  upcoming?: boolean;
+  sortBy: "scheduledAt" | "title" | "createdAt";
+  sortOrder: "asc" | "desc";
+}
+
+export interface PaginatedEvents {
+  data: Event[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface EventAnalytics {
+  totalEvents: number;
+  scheduledEvents: number;
+  activeEvents: number;
+  completedEvents: number;
+  cancelledEvents: number;
+  upcomingThisWeek: number;
+  eventsByType: {
+    voice: number;
+    stage: number;
+  };
+  eventsByDifficulty: {
+    beginner: number;
+    intermediate: number;
+    advanced: number;
+  };
+}
+
+export interface CreateEventData {
+  title: string;
+  description: string;
+  eventType: "voice" | "stage";
+  difficultyLevel: "beginner" | "intermediate" | "advanced";
+  scheduledAt: Date;
+  duration?: number;
+  capacity?: number;
+  prerequisiteRoles: string[];
+  discordChannelId?: string;
+  createDiscordEvent: boolean;
+  createPrivateChannel: boolean;
+}
+
+export interface UpdateEventData {
+  title?: string;
+  description?: string;
+  eventType?: "voice" | "stage";
+  difficultyLevel?: "beginner" | "intermediate" | "advanced";
+  status?: "scheduled" | "active" | "completed" | "cancelled";
+  scheduledAt?: Date;
+  duration?: number;
+  capacity?: number;
+  prerequisiteRoles?: string[];
+  discordChannelId?: string;
+}

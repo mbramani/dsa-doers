@@ -1,7 +1,10 @@
 import type {
+  CreateEventData,
   CreateRoleData,
+  EventFilters,
   Role,
   RoleFilters,
+  UpdateEventData,
   UpdateRoleData,
   UserFilters,
 } from "@/types/admin";
@@ -293,6 +296,122 @@ export const useDeleteRole = () => {
     onError: (error) => {
       toast.error("Failed to delete role", {
         description: `Could not delete role. ${error instanceof Error ? error.message : "Please try again"}`,
+        icon: "❌",
+      });
+    },
+  });
+};
+
+// Add these to your existing hooks
+
+export const useEvents = (filters: Partial<EventFilters>) => {
+  return useQuery({
+    queryKey: ["admin", "events", filters],
+    queryFn: async () => {
+      const response = await adminService.getEvents(filters);
+      return response.data.status === "success" ? response.data.data : null;
+    },
+  });
+};
+
+export const useEventAnalytics = () => {
+  return useQuery({
+    queryKey: ["admin", "events", "analytics"],
+    queryFn: async () => {
+      const response = await adminService.getEventAnalytics();
+      return response.data.status === "success" ? response.data.data : null;
+    },
+  });
+};
+
+export const useEventById = (eventId: string) => {
+  return useQuery({
+    queryKey: ["admin", "events", eventId],
+    queryFn: async () => {
+      const response = await adminService.getEventById(eventId);
+      return response.data.status === "success" ? response.data.data : null;
+    },
+    enabled: !!eventId,
+  });
+};
+
+export const useCreateEvent = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (eventData: CreateEventData) =>
+      adminService.createEvent(eventData),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "events"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "events", "analytics"],
+      });
+      toast.success("Event created successfully!", {
+        description: `"${variables.title}" has been scheduled for ${new Date(variables.scheduledAt).toLocaleDateString()}`,
+        icon: "🎉",
+      });
+    },
+    onError: (error, variables) => {
+      toast.error("Failed to create event", {
+        description: `Could not create "${variables.title}". ${error instanceof Error ? error.message : "Please try again"}`,
+        icon: "❌",
+      });
+    },
+  });
+};
+
+export const useUpdateEvent = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      eventId,
+      ...eventData
+    }: { eventId: string } & UpdateEventData) =>
+      adminService.updateEvent(eventId, eventData),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "events"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "events", variables.eventId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "events", "analytics"],
+      });
+      toast.success("Event updated successfully!", {
+        description: `Event has been updated${variables.status ? ` to ${variables.status}` : ""}`,
+        icon: "✅",
+      });
+    },
+    onError: (error) => {
+      toast.error("Failed to update event", {
+        description:
+          error instanceof Error ? error.message : "Please try again",
+        icon: "❌",
+      });
+    },
+  });
+};
+
+export const useDeleteEvent = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ eventId, reason }: { eventId: string; reason: string }) =>
+      adminService.deleteEvent(eventId, reason),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "events"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "events", "analytics"],
+      });
+      toast.success("Event deleted successfully!", {
+        description: `Event has been permanently removed. Reason: ${variables.reason}`,
+        icon: "🗑️",
+      });
+    },
+    onError: (error) => {
+      toast.error("Failed to delete event", {
+        description:
+          error instanceof Error ? error.message : "Please try again",
         icon: "❌",
       });
     },
